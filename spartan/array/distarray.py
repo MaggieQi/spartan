@@ -41,11 +41,11 @@ def compute_splits(shape, tile_hint=None, num_shards=-1):
       return { extent.create([], [], ()) :  0 }
    
     weight = 1
-    
+
     # split each dimension into tiles.  the first dimension
     # is kept contiguous if possible.
     for dim in reversed(list(range(len(shape)))):
-      step = max(1, tile_size / weight)
+      step = int(max(1, tile_size / weight))
       dim_splits = []
       for i in range(0, shape[dim], step):
         dim_splits.append((i, min(shape[dim], i + step)))

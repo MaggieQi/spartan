@@ -259,8 +259,8 @@ def from_slice(idx, shape):
       slc = int(slc)
       slc = slice(slc, slc + 1, None)
     
-    if slc.start > 0: assert slc.start <= dim
-    if slc.stop > 0: assert slc.stop <= dim
+    if slc.start is not None and slc.start > 0: assert slc.start <= dim
+    if slc.stop is not None and slc.stop > 0: assert slc.stop <= dim
     
     indices = slc.indices(dim)
     ul.append(indices[0])
