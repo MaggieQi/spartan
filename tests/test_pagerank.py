@@ -19,7 +19,7 @@ def sparse_multiply(wts, p):
     t1 = datetime.now()
     p = expr.dot(wts, p).force()
     t2 = datetime.now()
-    print "iteration %d sparse * dense: %s ms" % (i, millis(t1, t2))
+    print("iteration %d sparse * dense: %s ms" % (i, millis(t1, t2)))
     
   #print p.glom()
   #if scipy.sparse.issparse(r):
@@ -40,8 +40,8 @@ def _build_site_coo(num_pages,
   
 
   i = 0
-  for page in xrange(num_pages):
-    for link in xrange(num_outlinks):
+  for page in range(num_pages):
+    for link in range(num_outlinks):
       rows[i] = outlink[i]
       cols[i] = page
       data[i] = 1
@@ -106,7 +106,7 @@ def benchmark_pr(ctx, timer):
   num_outlinks = 10
   density = num_outlinks * 1.0 / num_pages
   same_site_prob = 0.9
-  print "#worker:", ctx.num_workers
+  print("#worker:", ctx.num_workers)
   col_step = util.divup(num_pages, ctx.num_workers)
   
   wts_tile_hint = [num_pages, col_step]

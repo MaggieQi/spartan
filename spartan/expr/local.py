@@ -15,13 +15,13 @@ from spartan import util
 from spartan.util import Assert
 from spartan.node import Node, node_type
 
-var_id = iter(xrange(1000000))
+var_id = iter(range(1000000))
 
 class CodegenException(Exception): pass
 
 def make_var():
   '''Return a new unique key for use as a variable name'''
-  return 'k%d' % var_id.next()
+  return 'k%d' % next(var_id)
 
 
 @node_type
@@ -129,7 +129,7 @@ def compile_parakeet_source(src):
 
   try:
     module = imp.load_source('parakeet_temp', tmpfile.name)
-  except Exception, ex:
+  except Exception as ex:
     util.log_info('Failed to build parakeet wrapper')
     util.log_debug('Source was: %s', src)
     raise CodegenException(ex.message, ex.args)

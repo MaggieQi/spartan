@@ -33,7 +33,7 @@ class Master(object):
     self._ctx.active = False
 
     futures = rpc.FutureGroup()
-    for id, w in self._workers.iteritems():
+    for id, w in self._workers.items():
       #util.log_info('Shutting down worker %d', id)
       futures.append(w.shutdown())
 
@@ -56,10 +56,10 @@ class Master(object):
   def _initialize(self):
     util.log_info('Initializing...')
     req = core.Initialize(peers=dict([(id, w.addr())
-                                      for id, w in self._workers.iteritems()]))
+                                      for id, w in self._workers.items()]))
 
     futures = rpc.FutureGroup()
-    for id, w in self._workers.iteritems():
+    for id, w in self._workers.items():
       req.id = id
       futures.append(w.initialize(req))
     futures.wait()

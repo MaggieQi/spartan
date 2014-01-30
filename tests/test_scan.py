@@ -13,7 +13,7 @@ class TestScan(test_common.ClusterTest):
     a = expr.ones(ARRAY_SIZE, dtype=np.float32, tile_hint=tile_hint)
     c = expr.scan(a, reduce_fn=np.sum, scan_fn=np.cumsum, accum_fn=None, axis=axis)
     
-    print c
+    print(c)
   
   def test_sparse_scan(self):
     axis = 1
@@ -23,29 +23,29 @@ class TestScan(test_common.ClusterTest):
                      accum_fn=None, 
                      axis=axis)
     
-    print c
+    print(c)
   
   def test_sum_scan(self):
     axis = None
     a = expr.ones(ARRAY_SIZE, dtype=np.float32, tile_hint=tile_hint)
     c = expr.scan(a, reduce_fn=np.sum, scan_fn=np.cumsum, accum_fn=None, axis=axis)
     
-    print c
+    print(c)
     
   def test_noreduce_scan(self):
     a = expr.ones(ARRAY_SIZE, dtype=np.float32, tile_hint=tile_hint)
     c = expr.scan(a, scan_fn=np.cumsum)
-    print c
+    print(c)
   
   def test_noscan_scan(self):
     a = expr.ones(ARRAY_SIZE, dtype=np.float32, tile_hint=tile_hint)
     c = expr.scan(a, reduce_fn=np.sum)
-    print c
+    print(c)
     
   def test_noreduce_noscan_scan(self):
     a = expr.ones(ARRAY_SIZE, dtype=np.float32, tile_hint=tile_hint)
     c = expr.scan(a)
-    print c
+    print(c)
     
 if __name__ == '__main__':
   unittest.main()

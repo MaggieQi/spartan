@@ -20,8 +20,8 @@ def sig_handler(sig, frame):
   import sys
   import traceback
 
-  for thread_id, stack in sys._current_frames().items():
-    print '-' * 100
+  for thread_id, stack in list(sys._current_frames().items()):
+    print('-' * 100)
     traceback.print_stack(stack)
 
 class BenchTimer(object):
@@ -32,7 +32,7 @@ class BenchTimer(object):
     st = time.time()
     result = fn()
     ed = time.time()
-    print '%d,"%s",%f' % (self.num_workers, key, ed - st)
+    print('%d,"%s",%f' % (self.num_workers, key, ed - st))
     return result
     
 
@@ -56,7 +56,7 @@ def run(filename):
   spartan.config.parse(sys.argv)
   if benchmarks:
     # csv header
-    print 'num_workers,bench,time'
+    print('num_workers,bench,time')
     workers = [int(w) for w in FLAGS.worker_list.split(',')]
     
     for i in workers:
@@ -95,14 +95,14 @@ class ClusterTest(unittest.TestCase):
 
     cls.old_flags = {}
     if cls.flags is not None:
-      for k, v in cls.flags.iteritems():
+      for k, v in cls.flags.items():
         cls.old_flags[k] = getattr(config.FLAGS, k)
         setattr(config.FLAGS, k, v)
 
   @classmethod
   def tearDownClass(cls):
     distarray.DEFAULT_TILE_SIZE = cls.old_tilesize
-    for k, v in cls.old_flags.iteritems():
+    for k, v in cls.old_flags.items():
       setattr(config.FLAGS, k, v)
 
 
@@ -124,4 +124,4 @@ if __name__ == '__main__':
   if sys.argv[1] == 'join':
     join_profiles(sys.argv[2])
   else:
-    raise Exception, 'Should not be run directly.'
+    raise Exception('Should not be run directly.')

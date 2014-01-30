@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
-
-import cPickle
-
 import numpy as np
 
-from spartan import util, cloudpickle
+from spartan import util
 from spartan.util import Assert
 from spartan.node import Node, node_type
 

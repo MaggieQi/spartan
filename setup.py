@@ -14,10 +14,10 @@ except:
 
 # Ensure Cython .c files are up to date before uploading
 def build_cython():
-  print '#' * 10, 'Cythonizing extensions.'
+  print('#' * 10, 'Cythonizing extensions.')
   for f in os.popen('find spartan -name "*.pyx"').read().split('\n'):
     if not f.strip(): continue
-    print '#' * 10, 'Cythonizing %s' % f
+    print('#' * 10, 'Cythonizing %s' % f)
     assert os.system('cython "%s"' % f) == 0
 
 build_cython()

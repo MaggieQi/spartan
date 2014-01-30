@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import cStringIO
+import io
 import collections
 from contextlib import contextmanager
 import logging
@@ -21,10 +21,16 @@ PID = os.getpid()
 
 LOGGING_CONFIGURED = False
 
+def findCaller(a=None, b=None):
+  f = sys._getframe(5)
+  co = f.f_code
+  filename = os.path.normcase(co.co_filename)
+  return co.co_filename, f.f_lineno, co.co_name
+
 def _setup_logger():
   global LOGGING_CONFIGURED
   if logging.root is None:
-    raise Exception, 'Log attempt before logging was configured.'
+    raise Exception('Log attempt before logging was configured.')
   
   logging.RootLogger.findCaller = findCaller
   LOGGING_CONFIGURED = True   
@@ -54,11 +60,6 @@ def log_fatal(*args, **kw):
   kw['extra'] = { 'hostname' : HOSTNAME, 'pid' : PID }
   logging.fatal(*args, **kw) 
 
-def findCaller(obj):
-  f = sys._getframe(5)
-  co = f.f_code
-  filename = os.path.normcase(co.co_filename)
-  return co.co_filename, f.f_lineno, co.co_name
 
 
 
@@ -149,7 +150,7 @@ class EZTimer(object):
     self.st = time.time()
 
   def __del__(self):
-    print('%3.5f:: %s' % (time.time() - self.st, self.name))
+    print(('%3.5f:: %s' % (time.time() - self.st, self.name)))
 
 
 class Timer(object):
@@ -174,27 +175,27 @@ def dump_stacks(out):
   id_to_name = dict([(th.ident, th.name) for th in threading.enumerate()])
   thread_stacks = collections.defaultdict(list)
 
-  for thread_id, stack in sys._current_frames().items():
+  for thread_id, stack in list(sys._current_frames().items()):
     code = []
     for filename, lineno, name, line in traceback.extract_stack(stack):
       if line is None: line = ''
       code.append('%s:%d (%s): %s' % (basename(filename), lineno, name, line.strip()))
     thread_stacks['\n'.join(code)].append(thread_id)
 
-  for stack, thread_ids in thread_stacks.iteritems():
-    print >> out, 'Thread %d(%s)' % (thread_ids[0], id_to_name.get(thread_ids[0], ''))
+  for stack, thread_ids in thread_stacks.items():
+    print('Thread %d(%s)' % (thread_ids[0], id_to_name.get(thread_ids[0], '')))
     if len(thread_ids) > 1:
-      print >> out, '... and %d more' % (len(thread_ids) - 1)
-    print >> out, stack
-    print >> out
+      print('... and %d more' % (len(thread_ids) - 1), file=out)
+    print(stack, file=out)
+    print(file=out)
 
 
 def stack_signal():
-  out = cStringIO.StringIO()
+  out = io.StringIO()
   dump_stacks(out)
-  print >> sys.stderr, out.getvalue()
+  print(out.getvalue(), file=sys.stderr)
   with open('/tmp/%d.stacks' % os.getpid(), 'w') as f:
-    print >> f, out.getvalue()
+    print(out.getvalue(), file=f)
 
 
 class Assert(object):
@@ -280,7 +281,7 @@ class Assert(object):
     for item in collection:
       d[item] += 1
 
-    bad = [(k, v) for k, v in d.iteritems() if v > 1]
+    bad = [(k, v) for k, v in d.items() if v > 1]
     assert len(bad) == 0, 'Duplicates found: %s' % bad
     
   @staticmethod
@@ -351,7 +352,7 @@ def count_calls(fn):
 
   def wrapped(*args, **kw):
     count[0] += 1
-    if count[0] % 100 == 0: print count[0], fn.__name__
+    if count[0] % 100 == 0: print(count[0], fn.__name__)
     return fn(*args, **kw)
 
   wrapped.__name__ = 'counted_' + fn.__name__

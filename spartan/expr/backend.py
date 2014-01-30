@@ -13,7 +13,7 @@ from spartan import util
 def _evaluate(ctx, prim):
   #util.log_info('Evaluting deps for %s', prim)
   deps = {}
-  for k, vs in prim.dependencies().iteritems():
+  for k, vs in prim.dependencies().items():
     deps[k] = evaluate(ctx, vs)
       
   #util.log_info('Evaluting %s', prim.typename())
@@ -36,7 +36,7 @@ def evaluate(ctx, prim):
   
   #util.log_info('%s', type(prim))
   if isinstance(prim, dict):
-    return dict([(k, evaluate(ctx, v)) for (k, v) in prim.iteritems()])
+    return dict([(k, evaluate(ctx, v)) for (k, v) in prim.items()])
   elif isinstance(prim, tuple):
     return tuple([evaluate(ctx, v) for v in prim])
   elif isinstance(prim, list):

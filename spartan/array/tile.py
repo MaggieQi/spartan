@@ -20,7 +20,7 @@ MASK_ALL_SET = 1
 #   change to update: takes a (slice, data, reducer) 
 #   where data is dense, masked, or sparse.
 
-ID = iter(xrange(100000000))
+ID = iter(range(100000000))
 
 class Tile(object):
   '''
@@ -34,7 +34,7 @@ class Tile(object):
 
   def __init__(self, shape, dtype, data, mask, tile_type):
     Assert.ne(dtype, object)
-    self.id = ID.next()
+    self.id = next(ID)
     self.shape = shape
     self.dtype = dtype
     self.type = tile_type

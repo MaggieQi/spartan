@@ -244,7 +244,7 @@ class ZMQPoller(threading.Thread):
 
       if self.profiler: self.profiler.enable()
       #util.log_info('%s', self._sockets)
-      for fd, event in socks.iteritems():
+      for fd, event in socks.items():
         if fd == self._pipe[0]:
           os.read(fd, 10000)
           continue
@@ -286,7 +286,7 @@ class ZMQPoller(threading.Thread):
       self.join()
 
   def wakeup(self):
-    os.write(self._pipe[1], 'x')
+    os.write(self._pipe[1], bytes('x', 'UTF-8'))
 
   def modify(self, socket, direction):
     with self._lock:

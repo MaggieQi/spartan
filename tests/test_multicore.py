@@ -14,4 +14,4 @@ def _do_work():
     
 start = time.time()
 _do_work()
-print sys.argv[1], time.time() - start
+print(sys.argv[1], time.time() - start)

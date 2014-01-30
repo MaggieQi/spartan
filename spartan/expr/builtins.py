@@ -207,7 +207,6 @@ def scan(array, reduce_fn=None, scan_fn=None, accum_fn=None, axis=None):
   reduce_result = shuffle(array, fn=_scan_mapper, kw={'axis': axis,
                                                       'reduce_fn': reduce_fn})
   fetch_result = reduce_result.glom()
-  print fetch_result
   if scan_fn is not None:
     return scan_fn(fetch_result)
   return fetch_result

@@ -105,7 +105,7 @@ class MapMapFusion(OptimizePass):
     map_children = self.visit(expr.children)
     all_maps = True
     Assert.isinstance(map_children, DictExpr)
-    for k, v in map_children.iteritems():
+    for k, v in map_children.items():
       if not map_like(v):
         all_maps = False
         break
@@ -118,9 +118,9 @@ class MapMapFusion(OptimizePass):
     combined_op = LocalMapExpr(fn=expr.op.fn,
                                kw=expr.op.kw,
                                pretty_fn=expr.op.pretty_fn)
-    for name, child_expr in map_children.iteritems():
+    for name, child_expr in map_children.items():
       if isinstance(child_expr, MapExpr):
-        for k, v in child_expr.children.iteritems():
+        for k, v in child_expr.children.items():
           merge_var(children, k, v)
 
         #util.log_info('Merging: %s', child_expr.op)
@@ -144,7 +144,7 @@ class ReduceMapFusion(OptimizePass):
     Assert.isinstance(expr.children, DictExpr)
     old_children = self.visit(expr.children)
 
-    for k, v in old_children.iteritems():
+    for k, v in old_children.items():
       if not isinstance(v, MapExpr):
         return expr.visit(self)
 
@@ -153,8 +153,8 @@ class ReduceMapFusion(OptimizePass):
                                   deps=[expr.op.deps[0]])
 
     new_children = {}
-    for name, child_expr in old_children.iteritems():
-      for k, v in child_expr.children.iteritems():
+    for name, child_expr in old_children.items():
+      for k, v in child_expr.children.items():
         merge_var(new_children, k, v)
       combined_op.add_dep(child_expr.op)
 
@@ -196,7 +196,7 @@ def _codegen(op):
     name = op.fn_name()
 
     arg_str = ','.join([_codegen(v) for v in op.deps])
-    kw_str = ','.join(['%s=%s' % (k, repr(v)) for k, v in op.kw.iteritems()])
+    kw_str = ','.join(['%s=%s' % (k, repr(v)) for k, v in op.kw.items()])
     if arg_str:
       kw_str = ',' + kw_str
 

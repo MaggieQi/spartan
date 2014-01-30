@@ -34,7 +34,7 @@ def test_stencil(ctx):
   
   result = stencil.stencil(images, filters, 1)
   ed = time.time()
-  print ed - st
+  print(ed - st)
 
 @with_ctx
 def test_local_convolve(ctx):
@@ -44,7 +44,7 @@ def test_local_convolve(ctx):
     images = np.ones((N, 3, 128, 128))
     st = time.time()
     stencil._convolve(images, filters)
-    print N, F, time.time() - st
+    print(N, F, time.time() - st)
 
 if __name__ == '__main__':
   test_stencil()

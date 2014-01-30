@@ -33,9 +33,9 @@ def _convolve(local_image, local_filters):
     image = local_image[iid]
     f = local_filters[fid]
     out = 0
-    for c in xrange(n_color):
-      for i in xrange(fw):
-        for j in xrange(fh):
+    for c in range(n_color):
+      for i in range(fw):
+        for j in range(fh):
           if x + i < w and y + j < h:
             out += image[c, x + i, y + j] * f[c, i, j]
     return out
@@ -53,12 +53,12 @@ def _maxpool(array, pool_size, stride):
                     _divup(w, stride),
                     _divup(h, stride))) * -1e12
   
-  for img in xrange(n):
-    for color in xrange(c):
-      for x in xrange(0, w, stride): 
-        for y in xrange(0, h, stride): 
-          for i in xrange(0, pool_size):
-            for j in xrange(0, pool_size):
+  for img in range(n):
+    for color in range(c):
+      for x in range(0, w, stride): 
+        for y in range(0, h, stride): 
+          for i in range(0, pool_size):
+            for j in range(0, pool_size):
               if x + i < w and y + j < h:
                 # TODO(power) -- replace this when parakeet bug is fixed
                 target[0, 0, 0, 0] = 0

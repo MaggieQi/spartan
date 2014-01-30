@@ -53,7 +53,7 @@ import sys
 import types
 from functools import partial
 import itertools
-from copy_reg import _extension_registry, _inverted_registry, _extension_cache
+from copyreg import _extension_registry, _inverted_registry, _extension_cache
 import new
 import dis
 import traceback
@@ -86,9 +86,9 @@ else:
 
 
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 # These helper functions were copied from PiCloud's util module.
 def islambda(func):
@@ -141,7 +141,7 @@ class CloudPickler(pickle.Pickler):
         self.inject_addons()
         try:
             return pickle.Pickler.dump(self, obj)
-        except RuntimeError, e:
+        except RuntimeError as e:
             if 'recursion' in e.args[0]:
                 msg = """Could not pickle object as excessively deep recursion required.
                 Try _fast_serialization=2 or contact PiCloud support"""
@@ -168,7 +168,7 @@ class CloudPickler(pickle.Pickler):
         dispatch[slice] = save_unsupported
 
     #itertools objects do not pickle!
-    for v in itertools.__dict__.values():
+    for v in list(itertools.__dict__.values()):
         if type(v) is type:
             dispatch[v] = save_unsupported
 
@@ -246,7 +246,7 @@ class CloudPickler(pickle.Pickler):
         # if func is lambda, def'ed at prompt, is in main, or is nested, then
         # we'll pickle the actual function object rather than simply saving a
         # reference (as is done in default pickler), via save_function_tuple.
-        if islambda(obj) or obj.func_code.co_filename == '<stdin>' or themodule == None:
+        if islambda(obj) or obj.__code__.co_filename == '<stdin>' or themodule == None:
             #Force server to import modules that have been imported in main
             modList = None
             if themodule == None and not self.savedForceImports:
@@ -295,7 +295,7 @@ class CloudPickler(pickle.Pickler):
             save(_modules_to_main)
             #print 'forced imports are', forced_imports
 
-            forced_names = map(lambda m: m.__name__, forced_imports)
+            forced_names = [m.__name__ for m in forced_imports]
             save((forced_names,))
 
             #save((forced_imports,))
@@ -342,7 +342,7 @@ class CloudPickler(pickle.Pickler):
                 extended_arg = 0
                 i = i+2
                 if op == EXTENDED_ARG:
-                    extended_arg = oparg*65536L
+                    extended_arg = oparg*65536
                 if op in GLOBAL_OPS:
                     out_names.add(names[oparg])
         #print 'extracted', out_names, ' from ', names
@@ -353,7 +353,7 @@ class CloudPickler(pickle.Pickler):
         Turn the function into a tuple of data necessary to recreate it:
             code, globals, defaults, closure, dict
         """
-        code = func.func_code
+        code = func.__code__
 
         # extract all global ref's
         func_global_refs = CloudPickler.extract_code_globals(code)
@@ -365,37 +365,37 @@ class CloudPickler(pickle.Pickler):
         f_globals = {}
         for var in func_global_refs:
             #Some names, such as class functions are not global - we don't need them
-            if func.func_globals.has_key(var):
-                f_globals[var] = func.func_globals[var]
+            if var in func.__globals__:
+                f_globals[var] = func.__globals__[var]
 
         # defaults requires no processing
-        defaults = func.func_defaults
+        defaults = func.__defaults__
 
         def get_contents(cell):
             try:
                 return cell.cell_contents
-            except ValueError, e: #cell is empty error on not yet assigned
+            except ValueError as e: #cell is empty error on not yet assigned
                 raise pickle.PicklingError('Function to be pickled has free variables that are referenced before assignment in enclosing scope')
 
 
         # process closure
-        if func.func_closure:
-            closure = map(get_contents, func.func_closure)
+        if func.__closure__:
+            closure = list(map(get_contents, func.__closure__))
         else:
             closure = []
 
         # save the dict
-        dct = func.func_dict
+        dct = func.__dict__
 
         if printSerialization:
             outvars = ['code: ' + str(code) ]
             outvars.append('globals: ' + str(f_globals))
             outvars.append('defaults: ' + str(defaults))
             outvars.append('closure: ' + str(closure))
-            print 'function ', func, 'is extracted to: ', ', '.join(outvars)
+            print('function ', func, 'is extracted to: ', ', '.join(outvars))
 
-        base_globals = self.globals_ref.get(id(func.func_globals), {})
-        self.globals_ref[id(func.func_globals)] = base_globals
+        base_globals = self.globals_ref.get(id(func.__globals__), {})
+        self.globals_ref[id(func.__globals__)] = base_globals
 
         return (code, f_globals, defaults, closure, dct, base_globals)
 
@@ -437,19 +437,19 @@ class CloudPickler(pickle.Pickler):
                     themodule = sys.modules[modname]
                     try:
                         klass = getattr(themodule, name)
-                    except AttributeError, a:
+                    except AttributeError as a:
                         #print themodule, name, obj, type(obj)
                         raise pickle.PicklingError("Can't pickle builtin %s" % obj)
                 else:
                     raise
 
         except (ImportError, KeyError, AttributeError):
-            if typ == types.TypeType or typ == types.ClassType:
+            if typ == type or typ == type:
                 sendRef = False
             else: #we can't deal with this
                 raise
         else:
-            if klass is not obj and (typ == types.TypeType or typ == types.ClassType):
+            if klass is not obj and (typ == type or typ == type):
                 sendRef = False
         if not sendRef:
             #note: Third party types might crash this - add better checks!
@@ -482,13 +482,13 @@ class CloudPickler(pickle.Pickler):
 
         write(pickle.GLOBAL + modname + '\n' + name + '\n')
         self.memoize(obj)
-    dispatch[types.ClassType] = save_global
+    dispatch[type] = save_global
     dispatch[types.BuiltinFunctionType] = save_global
-    dispatch[types.TypeType] = save_global
+    dispatch[type] = save_global
 
     def save_instancemethod(self, obj):
         #Memoization rarely is ever useful due to python bounding
-        self.save_reduce(types.MethodType, (obj.im_func, obj.im_self,obj.im_class), obj=obj)
+        self.save_reduce(types.MethodType, (obj.__func__, obj.__self__,obj.__self__.__class__), obj=obj)
     dispatch[types.MethodType] = save_instancemethod
 
     def save_inst_logic(self, obj):
@@ -576,7 +576,7 @@ class CloudPickler(pickle.Pickler):
         """Modified to support __transient__ on new objects
         Change only affects protocol level 2 (which is always used by PiCloud"""
         # Assert that args is a tuple or None
-        if not isinstance(args, types.TupleType):
+        if not isinstance(args, tuple):
             raise pickle.PicklingError("args from reduce() should be a tuple")
 
         # Assert that func is callable
@@ -644,7 +644,7 @@ class CloudPickler(pickle.Pickler):
 
     #python2.6+ supports xrange pickling. some py2.5 extensions might as well.  We just test it
     try:
-        xrange(0).__reduce__()
+        range(0).__reduce__()
     except TypeError: #can't pickle -- use PiCloud pickler
         dispatch[xrange] = save_xrange
 
@@ -658,7 +658,7 @@ class CloudPickler(pickle.Pickler):
 
     def save_file(self, obj):
         """Save a file"""
-        import StringIO as pystringIO #we can't use cStringIO as it lacks the name attribute
+        import io as pystringIO #we can't use cStringIO as it lacks the name attribute
         from ..transport.adapter import SerializingAdapter
 
         if not hasattr(obj, 'name') or  not hasattr(obj, 'mode'):
@@ -822,8 +822,8 @@ def django_settings_load(name):
         modified_env = True
     try:
         module = subimport(name)
-    except Exception, i:
-        print >> sys.stderr, 'Cloud not import django settings %s:' % (name)
+    except Exception as i:
+        print('Cloud not import django settings %s:' % (name), file=sys.stderr)
         print_exec(sys.stderr)
         if modified_env:
             del os.environ['DJANGO_SETTINGS_MODULE']
@@ -835,7 +835,7 @@ def django_settings_load(name):
 
 # restores function attributes
 def _restore_attr(obj, attr):
-    for key, val in attr.items():
+    for key, val in list(attr.items()):
         setattr(obj, key, val)
     return obj
 
@@ -856,7 +856,7 @@ def _modules_to_main(modList):
         if type(modname) is str:
             try:
                 mod = __import__(modname)
-            except Exception, i: #catch all...
+            except Exception as i: #catch all...
                 sys.stderr.write('warning: could not import %s\n.  Your function may unexpectedly error due to this import failing; \
 A version mismatch is likely.  Specific error was:\n' % modname)
                 print_exec(sys.stderr)
@@ -870,7 +870,7 @@ A version mismatch is likely.  Specific error was:\n' % modname)
 #object generators:
 def _build_xrange(start, step, len):
     """Built xrange explicitly"""
-    return xrange(start, start + step*len, step)
+    return range(start, start + step*len, step)
 
 def _genpartial(func, args, kwds):
     if not args:
@@ -884,14 +884,14 @@ def _fill_function(func, globals, defaults, closure, dict):
     """ Fills in the rest of function data into the skeleton function object
         that were created via _make_skel_func().
          """
-    func.func_globals.update(globals)
-    func.func_defaults = defaults
-    func.func_dict = dict
+    func.__globals__.update(globals)
+    func.__defaults__ = defaults
+    func.__dict__ = dict
 
-    if len(closure) != len(func.func_closure):
+    if len(closure) != len(func.__closure__):
         raise pickle.UnpicklingError("closure lengths don't match up")
     for i in range(len(closure)):
-        _change_cell_value(func.func_closure[i], closure[i])
+        _change_cell_value(func.__closure__[i], closure[i])
 
     return func
 
@@ -907,7 +907,7 @@ def _make_skel_func(code, num_closures, base_globals = None):
     cellnew = ctypes.pythonapi.PyCell_New
     cellnew.restype = ctypes.py_object
     cellnew.argtypes = (ctypes.py_object,)
-    dummy_closure = tuple(map(lambda i: cellnew(None), range(num_closures)))
+    dummy_closure = tuple([cellnew(None) for i in range(num_closures)])
 
     if base_globals is None:
         base_globals = {}

@@ -29,13 +29,13 @@ class TestTile(test_common.ClusterTest):
     t = tile.from_shape(ARRAY_SIZE, dtype=np.float32, tile_type=tile.TYPE_DENSE)
     update = np.ones(UPDATE_SHAPE)
     t.update(UPDATE_SUBSLICE, update, None)
-    print t.data
+    print(t.data)
     
   def test_update_dense_to_sparse(self):
     t = tile.from_shape(ARRAY_SIZE, dtype=np.float32, tile_type=tile.TYPE_SPARSE)
     update = np.ones(UPDATE_SHAPE)
     t.update(UPDATE_SUBSLICE, update, None)
-    print t.data.todense()
+    print(t.data.todense())
     
   def test_update_sparse_to_dense(self):
     t = tile.from_shape(ARRAY_SIZE, dtype=np.float32, tile_type=tile.TYPE_DENSE)
@@ -43,8 +43,8 @@ class TestTile(test_common.ClusterTest):
     for i in range(UPDATE_SHAPE[0]):
       update[i,i] = 1
     t.update(UPDATE_SUBSLICE, update, None)
-    print t.data
-    print t.mask
+    print(t.data)
+    print(t.mask)
     
   def test_update_sparse_to_sparse(self):
     t = tile.from_shape(ARRAY_SIZE, dtype=np.float32, tile_type=tile.TYPE_SPARSE)
@@ -53,7 +53,7 @@ class TestTile(test_common.ClusterTest):
       update[i,i] = 1
     t.update(UPDATE_SUBSLICE, update, None)
     Assert.eq(sp.issparse(t.data), True)
-    print t.data.todense()
+    print(t.data.todense())
     
 if __name__ == '__main__':
   unittest.main()

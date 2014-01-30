@@ -3,7 +3,7 @@ import threading
 from .util import Assert
 
 MASTER_ID = 65536
-ID_COUNTER = iter(xrange(10000000))
+ID_COUNTER = iter(range(10000000))
 
 
 class BlobCtx(object):
@@ -48,7 +48,7 @@ class BlobCtx(object):
       util.log_debug('Ctx disabled.')
       return None
 
-    futures = rpc.forall(self.workers.itervalues(), method, req)
+    futures = rpc.forall(iter(self.workers.values()), method, req)
     if wait:
       return futures.wait()
     return futures
@@ -105,7 +105,7 @@ class BlobCtx(object):
   
   def create_local(self):
     assert not self.is_master()
-    return core.BlobId(worker=self.worker_id, id=ID_COUNTER.next())
+    return core.BlobId(worker=self.worker_id, id=next(ID_COUNTER))
 
   def create(self, data, hint=None):
     assert self.worker_id >= 0, self.worker_id
@@ -114,13 +114,13 @@ class BlobCtx(object):
     # worker in round-robin order.
     if self.is_master():
       if hint is None:
-        worker_id = ID_COUNTER.next() % len(self.workers)
+        worker_id = next(ID_COUNTER) % len(self.workers)
       else:
         worker_id = hint % len(self.workers)
       id = -1
     else:
       worker_id = self.worker_id
-      id = ID_COUNTER.next()
+      id = next(ID_COUNTER)
 
     blob_id = core.BlobId(worker=worker_id, id=id)
 
@@ -141,10 +141,10 @@ class BlobCtx(object):
 
     #util.log_info('%s', req)
 
-    futures = rpc.forall(self.workers.itervalues(), 'run_kernel', req).wait()
+    futures = rpc.forall(iter(self.workers.values()), 'run_kernel', req).wait()
     result = {}
     for f in futures:
-      for blob_id, v in f.iteritems():
+      for blob_id, v in f.items():
         result[blob_id] = v
     return result
 

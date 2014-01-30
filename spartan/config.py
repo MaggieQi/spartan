@@ -16,7 +16,7 @@ are also parsed out from the SPARTAN_OPTS environment variable.
 
 
 """
-import ConfigParser
+import configparser
 import argparse
 import logging
 import os
@@ -100,13 +100,13 @@ class Flags(object):
     self.__dict__['_vals'][key].val = value
 
   def __repr__(self):
-    return ' '.join([repr(f) for f in self._vals.values()])
+    return ' '.join([repr(f) for f in list(self._vals.values())])
 
   def __str__(self):
     return repr(self)
 
   def __iter__(self):
-    return iter(self._vals.items())
+    return iter(list(self._vals.items()))
 
 
 FLAGS = Flags()
@@ -139,24 +139,24 @@ def parse(argv):
   config_dir = os.path.dirname(config_file)
   if not os.path.exists(config_dir):
     try:
-      os.makedirs(config_dir, mode=0755)
+      os.makedirs(config_dir, mode=0o755)
     except:
-      print >>sys.stderr, 'Failed to create config directory.'
+      print('Failed to create config directory.', file=sys.stderr)
 
   if os.path.exists(config_file):
-    print >>sys.stderr, 'Loading configuration from %s' % (config_file)
+    print('Loading configuration from %s' % (config_file), file=sys.stderr)
 
     # Prepend configuration options to the flags array so that they
     # are overridden by user flags.
     try:
-      config = ConfigParser.ConfigParser()
+      config = configparser.ConfigParser()
       config.read(config_file)
 
       if config.has_section('flags'):
         for name, value in config.items('flags'):
           argv.insert(0, '--%s=%s' % (name, value))
     except:
-      print >>sys.stderr, 'Failed to parse config file: %s' % config_file
+      print('Failed to parse config file: %s' % config_file, file=sys.stderr)
       sys.exit(1)
 
   parser = argparse.ArgumentParser()
@@ -181,12 +181,12 @@ def parse(argv):
 
   for f in rest:
     if f.startswith('-'):
-      print >>sys.stderr, '>>> Unknown flag: %s (ignored)' % f
+      print('>>> Unknown flag: %s (ignored)' % f, file=sys.stderr)
 
   if FLAGS.print_options:
-    print 'Configuration status:'
+    print('Configuration status:')
     for name, flag in sorted(FLAGS):
-      print '  >> ', name, '\t', flag.val
+      print('  >> ', name, '\t', flag.val)
 
 
   util.log_debug('Hostlist: %s', FLAGS.hosts)

@@ -1,4 +1,4 @@
-import cPickle
+import pickle
 import random
 import zipfile
 
@@ -24,7 +24,7 @@ from spartan.expr import lazify
 #     m[m_idx] += u[u_idx] * diff * EPSILON
 #   
 
-from netflix_core import _sgd_inner
+from .netflix_core import _sgd_inner
 FILE_START = 1
 
 # utility functions for computing Netflix matrix factorization:
@@ -44,7 +44,7 @@ def load_netflix_mapper(inputs, ex, load_file=None):
   
   for i in range(row_start, row_end):
     offset = i - row_start
-    row_data = cPickle.loads(zf.read('%d' % (i + FILE_START)))
+    row_data = pickle.loads(zf.read('%d' % (i + FILE_START)))
     filtered = row_data[row_data['userid'] > col_start]
     filtered = filtered[filtered['userid'] < col_end]
     
@@ -100,7 +100,7 @@ def strata_overlap(extents, v):
 
 def _compute_strata(V):
   strata = []
-  extents = V.tiles.keys()
+  extents = list(V.tiles.keys())
   random.shuffle(extents)
   
   while extents:

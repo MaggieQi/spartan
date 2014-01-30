@@ -18,7 +18,7 @@ from ..array import distarray
 class NotShapeable(Exception):
   pass
 
-unique_id = iter(xrange(10000000))
+unique_id = iter(range(10000000))
 
 def _map(*args, **kw):
   '''
@@ -88,16 +88,20 @@ class Expr(object):
   def dot(self):
     result = 'N%s [label="%s"]\n' % (self.expr_id, self.node_type())
    
-    for name, value in self.dependencies().items():
+    for name, value in list(self.dependencies().items()):
       if isinstance(value, Expr):
         result = result + 'N%s -> N%s\n' % (self.expr_id, value.expr_id) 
   
-    for name, value in self.dependencies().items():
+    for name, value in list(self.dependencies().items()):
       if isinstance(value, Expr):
         result = result + value.dot()
     return result
-   
 
+  def __getitem__(self, idx):
+    raise Exception
+    from .index import IndexExpr
+    return IndexExpr(src=self, idx=idx)
+  
   def __del__(self):
     expr_references[self.expr_id] -= 1
     if expr_references[self.expr_id] == 0:
@@ -109,7 +113,7 @@ class Expr(object):
   def node_init(self):
     #assert self.expr_id is not None
     if self.expr_id is None:
-      self.expr_id = unique_id.next()
+      self.expr_id = next(unique_id)
     else:
       Assert.isinstance(self.expr_id, int)
 
@@ -169,12 +173,9 @@ class Expr(object):
   def __neg__(self):
     return _map(self, fn=np.negative)
 
-  def __getitem__(self, idx):
-    from .index import IndexExpr
-    return IndexExpr(src=self, idx=idx)
 
   def __setitem__(self, k, val):
-    raise Exception, 'Expressions are read-only.'
+    raise Exception('Expressions are read-only.')
 
   @property
   def shape(self):
@@ -206,6 +207,8 @@ Expr.__rsub__ = Expr.__sub__
 Expr.__radd__ = Expr.__add__
 Expr.__rmul__ = Expr.__mul__
 Expr.__rdiv__ = Expr.__div__
+Expr.__truediv__ = Expr.__div__
+Expr.__rtruediv__ = Expr.__div__
 
 @node_type
 class AsArray(Expr):
@@ -280,16 +283,16 @@ class CollectionExpr(Expr):
 
 @node_type
 class DictExpr(CollectionExpr):
-
-  def iteritems(self): return self.vals.iteritems()
-  def keys(self): return self.vals.keys()
-  def values(self): return self.vals.values()
+  def items(self): return self.vals.items()
+  def iteritems(self): return iter(self.vals.items())
+  def keys(self): return list(self.vals.keys())
+  def values(self): return list(self.vals.values())
   
   def dependencies(self):
     return self.vals
 
   def visit(self, visitor):
-    return DictExpr(vals=dict([(k, visitor.visit(v)) for (k, v) in self.vals.iteritems()]))
+    return DictExpr(vals=dict([(k, visitor.visit(v)) for (k, v) in self.vals.items()]))
 
 
 @node_type

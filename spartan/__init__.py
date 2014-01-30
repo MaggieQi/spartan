@@ -7,7 +7,7 @@ try:
   #pyximport.install()
   pass
 except:
-  print 'Pyximport failed (this is likely not a problem unless you are changing Cython files)'
+  print('Pyximport failed (this is likely not a problem unless you are changing Cython files)')
 
 
 import sys

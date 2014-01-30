@@ -44,7 +44,7 @@ def compute_splits(shape, tile_hint=None, num_shards=-1):
     
     # split each dimension into tiles.  the first dimension
     # is kept contiguous if possible.
-    for dim in reversed(range(len(shape))):
+    for dim in reversed(list(range(len(shape)))):
       step = max(1, tile_size / weight)
       dim_splits = []
       for i in range(0, shape[dim], step):
@@ -69,7 +69,7 @@ def compute_splits(shape, tile_hint=None, num_shards=-1):
     if num_shards != -1:
       idx = idx % num_shards
       
-    ul, lr = zip(*slc)
+    ul, lr = list(zip(*slc))
     ex = extent.create(ul, lr, shape)
     result[ex] = idx
     idx += 1
@@ -132,12 +132,12 @@ class DistArray(object):
   def map_to_array(self, mapper_fn, kw=None):
     results = self.foreach_tile(mapper_fn=mapper_fn, kw=kw)
     extents = {}
-    for blob_id, d in results.iteritems():
+    for blob_id, d in results.items():
       for ex, id in d:
         extents[ex] = id
     return from_table(extents)
   
-ID_COUNTER = iter(xrange(10000000))
+ID_COUNTER = iter(range(10000000))
 
 # List of tiles to be destroyed at the next safe point.
 _pending_destructors = []
@@ -161,14 +161,14 @@ class DistArrayImpl(DistArray):
     Assert.isinstance(tiles, dict)
 
     self.blob_to_ex = {}
-    for k,v in tiles.iteritems():
+    for k,v in tiles.items():
       Assert.isinstance(k, extent.TileExtent)
       Assert.isinstance(v, core.BlobId)
       self.blob_to_ex[v] = k
       #util.log_info('Blob: %s', v)
 
     self.tiles = tiles
-    self.id = ID_COUNTER.next()
+    self.id = next(ID_COUNTER)
 
     if _pending_destructors:
       self.ctx.destroy_all(_pending_destructors)
@@ -187,7 +187,7 @@ class DistArrayImpl(DistArray):
     '''
     if self.ctx.worker_id == blob_ctx.MASTER_ID:
       #util.log_info('Destroying table... %s', self.id)
-      tiles = self.tiles.values()
+      tiles = list(self.tiles.values())
       _pending_destructors.extend(tiles)
 
   def id(self):
@@ -198,10 +198,10 @@ class DistArrayImpl(DistArray):
   
   def tile_shape(self):
     scounts = collections.defaultdict(int)
-    for ex in self.tiles.iterkeys():
+    for ex in self.tiles.keys():
       scounts[ex.shape] += 1
     
-    return sorted(scounts.items(), key=lambda kv: kv[1])[-1][0]
+    return sorted(list(scounts.items()), key=lambda kv: kv[1])[-1][0]
 
   def foreach_tile(self, mapper_fn, kw=None):
     ctx = blob_ctx.get()
@@ -210,7 +210,7 @@ class DistArrayImpl(DistArray):
     kw['array'] = self
     kw['user_fn'] = mapper_fn
 
-    return ctx.map(self.tiles.values(),
+    return ctx.map(list(self.tiles.values()),
                    mapper_fn = _tile_mapper,
                    reduce_fn = None,
                    kw=kw)
@@ -240,7 +240,7 @@ class DistArrayImpl(DistArray):
       return tgt
     
     #util.log_warn('Remote fetch.')
-    splits = list(extent.find_overlapping(self.tiles.iterkeys(), region))
+    splits = list(extent.find_overlapping(iter(self.tiles.keys()), region))
 
     #util.log_info('Target shape: %s, %d splits', region.shape, len(splits))
     #util.log_info('Fetching %d tiles', len(splits))
@@ -354,7 +354,7 @@ def create(shape,
   tiles = {}
   tile_type = tile.TYPE_SPARSE if sparse else tile.TYPE_DENSE
   
-  for ex, i in extents.iteritems():    
+  for ex, i in extents.items():    
     tiles[ex] = ctx.create(
                   tile.from_shape(ex.shape, dtype, tile_type=tile_type), 
                   hint=i)
@@ -383,11 +383,11 @@ def from_table(extents):
   if not extents:
     shape = tuple()
   else:
-    shape = extent.find_shape(extents.keys())
+    shape = extent.find_shape(list(extents.keys()))
   
   if len(extents) > 0:
     # fetch one tile from the table to figure out the dtype
-    key, blob_id = extents.iteritems().next()
+    key, blob_id = next(iter(extents.items()))
     util.log_info('%s :: %s', key, blob_id)
     
     #dtype = blob_ctx.get().run_on_tile(blob_id, lambda t: t.dtype).wait()
@@ -463,7 +463,7 @@ def best_locality(array, ex):
     shard = array.extents[key]
     counts[shard] += overlap.size
   
-  s_counts = sorted(counts.items(), key=lambda kv: kv[1])
+  s_counts = sorted(list(counts.items()), key=lambda kv: kv[1])
   return s_counts[-1][0]
   
 
@@ -560,7 +560,7 @@ class Broadcast(DistArray):
     # fold down expanded dimensions
     ul = []
     lr = []
-    for i in xrange(len(self.base.shape)):
+    for i in range(len(self.base.shape)):
       size = self.base.shape[i]
       if size == 1:
         ul.append(0)

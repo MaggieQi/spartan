@@ -54,7 +54,7 @@ class Worker(object):
 
   def initialize(self, req, handle):
     util.log_debug('Worker %d initializing...', req.id)
-    for id, (host, port) in req.peers.iteritems():
+    for id, (host, port) in req.peers.items():
       self._peers[id] = rpc.connect(host, port)
 
     self.id = req.id
@@ -148,8 +148,8 @@ class Worker(object):
         os.system('mkdir -p ./_worker_profiles/')
         stats = pstats.Stats(zeromq.poller().profiler, self._kernel_prof)
         stats.dump_stats('./_worker_profiles/%d' % self.id)
-      except Exception, ex:
-        print 'Failed to write profile.', ex
+      except Exception as ex:
+        print('Failed to write profile.', ex)
     handle.done()
     threading.Thread(target=self._shutdown).start()
 
@@ -211,4 +211,4 @@ if __name__ == '__main__':
   for w in workers:
     w.join()
     
-  print >>sys.stderr, 'All workers exited!'
+  print('All workers exited!', file=sys.stderr)

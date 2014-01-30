@@ -34,7 +34,7 @@ class SliceTest(test_common.ClusterTest):
     x = expr.arange((TEST_SIZE, TEST_SIZE))
     z = x[5:8, 5:8]
     z = expr.map(z, add_one_tile)
-    print z
+    print(z)
     nx = np.arange(TEST_SIZE*TEST_SIZE).reshape(TEST_SIZE, TEST_SIZE)
     
     Assert.all_eq(z.glom(), nx[5:8, 5:8] + 1)
@@ -60,7 +60,7 @@ class SliceTest(test_common.ClusterTest):
     Assert.all_eq(val.reshape(10, 10), nx[:, :, 0] + 13)
     
   def test_from_slice(self):
-    print extent.from_slice((slice(None), slice(None), 0), [100, 100, 100])
+    print(extent.from_slice((slice(None), slice(None), 0), [100, 100, 100]))
   
   def test_slice_reduce(self):
     x = expr.arange((TEST_SIZE, TEST_SIZE, TEST_SIZE), dtype=np.int)
@@ -73,9 +73,9 @@ class SliceTest(test_common.ClusterTest):
   def test_slice_sub(self):
     a = expr.arange((TEST_SIZE,), dtype=np.int)
     v = (a[1:] - a[:-1])
-    print optimize.optimize(v)
+    print(optimize.optimize(v))
     v = v.glom()
-    print v
+    print(v)
 
     na = np.arange(TEST_SIZE, dtype=np.int)
     nv = na[1:] - na[:-1]

@@ -28,7 +28,7 @@ These include --
 import sys
 import numpy as np
 import scipy.sparse as sp
-import cPickle as cpickle
+import pickle as cpickle
 from struct import unpack, pack
 from .base import force
 from .base import glom

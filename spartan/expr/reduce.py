@@ -26,7 +26,7 @@ def _reduce_mapper(ex, children, op, axis, output):
   
   #util.log_info('Reduce: %s %s %s %s %s', reducer, ex, tile, axis, fn_kw)
 
-  local_values = dict([(k, v.fetch(ex)) for k, v in children.iteritems()])
+  local_values = dict([(k, v.fetch(ex)) for k, v in children.items()])
   
   # Set extent and axis information for user functions
   local_values['extent'] = ex
@@ -62,11 +62,11 @@ class ReduceExpr(Expr):
     op = deps['op']
     tile_accum = deps['accumulate_fn']
 
-    keys = children.keys()
-    vals = children.values()
+    keys = list(children.keys())
+    vals = list(children.values())
     vals = distarray.broadcast(vals)
     largest = distarray.largest_value(vals)
-    children = dict(zip(keys, vals))
+    children = dict(list(zip(keys, vals)))
 
     dtype = deps['dtype_fn'](vals[0])
     # util.log_info('Reducer: %s', op)

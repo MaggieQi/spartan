@@ -17,7 +17,7 @@ def tile_mapper(ex, children, op):
   #util.log_info('%s %s', children, ex)
 
   local_values = {}
-  for k, gv in children.iteritems():
+  for k, gv in children.items():
     lv = gv.fetch(ex)
     local_values[k] = lv
 
@@ -54,7 +54,7 @@ class MapExpr(Expr):
 
     Broadcasting results in a map taking the shape of the largest input.
     '''
-    shapes = [i.shape for i in self.children.values()]
+    shapes = [i.shape for i in list(self.children.values())]
     output_shape = collections.defaultdict(int)
     for s in shapes:
       for i, v in enumerate(s):
@@ -70,13 +70,13 @@ class MapExpr(Expr):
 
     #util.log_info('Codegen for expression: %s', local.codegen(op))
 
-    keys = children.keys()
-    vals = children.values()
+    keys = list(children.keys())
+    vals = list(children.values())
     vals = distarray.broadcast(vals)
     largest = distarray.largest_value(vals)
 
     util.log_info('%s', vals)
-    children = dict(zip(keys, vals))
+    children = dict(list(zip(keys, vals)))
     #util.log_info('Mapping %s over %d inputs; largest = %s', op, len(children), largest.shape)
 
     result = largest.map_to_array(

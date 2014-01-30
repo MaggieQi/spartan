@@ -4,7 +4,7 @@ Provides pretty printing, equality testing, hashing and keyword initialization.
 '''  
 
 
-from itertools import izip
+
 import copy
 
 _members_cache = {}  
@@ -46,10 +46,10 @@ def node_initializer(self, *args, **kw):
     for field in get_members:
       self_dict[field] = kw.get(field)
     
-    for field, value in izip(get_members, args):
+    for field, value in zip(get_members, args):
       self_dict[field] = value
       
-    for (k,v) in kw.iteritems():
+    for (k,v) in kw.items():
       assert k in get_members, \
         "Keyword argument '%s' not recognized for %s: %s" % \
         (k, self.node_type(), get_members)
@@ -93,7 +93,7 @@ class Node(object):
       yield (k, getattr(self, k, None))
       
   def itervalues(self):
-    for (_,v) in self.iteritems():
+    for (_,v) in self.items():
       yield v 
   
   def items(self):
@@ -110,7 +110,7 @@ class Node(object):
     return hash(tuple(hash_values))
   
   def eq_members(self, other):
-    for (k,v) in self.iteritems():
+    for (k,v) in self.items():
       if not hasattr(other, k):
         return False
       if getattr(other, k) != v:
@@ -128,13 +128,13 @@ class Node(object):
   
   def clone(self, **kwds):
     cloned = copy.deepcopy(self)
-    for (k,v) in kwds.values():
+    for (k,v) in list(kwds.values()):
       setattr(cloned, k, v)
     return cloned 
     
   def __str__(self):
     member_strings = []
-    for (k,v) in self.iteritems():
+    for (k,v) in self.items():
       if isinstance(v, list):
         v_str = ['[']
         for i, v in enumerate(v):

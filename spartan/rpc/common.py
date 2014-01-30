@@ -4,9 +4,9 @@ Simple RPC library.
 The :class:`.Client` and :class:`.Server` classes here work with
 sockets which should implement the :class:`.Socket` interface.
 '''
-from cPickle import PickleError
-import cPickle
-import cStringIO
+from pickle import PickleError
+import pickle
+import io
 import collections
 import os
 import pickle
@@ -17,7 +17,7 @@ import traceback
 import types
 import weakref
 
-from .. import cloudpickle, util, core
+from .. import util, core
 from ..node import Node, node_type
 
 
@@ -81,12 +81,13 @@ def serialize(obj):
   #return x.getvalue()
   #util.log_info('Pickling: %s', obj)
   try:
-    return cPickle.dumps(obj, -1)
+    return pickle.dumps(obj, -1)
   except (pickle.PicklingError, PickleError, TypeError):
-    return cloudpickle.dumps(obj, -1)
+    raise
+    #return cloudpickle.dumps(obj, -1)
 
 def read(f):
-  return cPickle.load(f)
+  return pickle.load(f)
 # 
 #   st = time.time()
 #   start_pos = f.tell()
@@ -132,8 +133,8 @@ class PendingRequest(object):
     header = { 'rpc_id' : self.rpc_id }
     
     #util.log_info('Finished %s, %s', self.socket.addr, self.rpc_id)
-    w = cStringIO.StringIO()
-    cPickle.dump(header, w, -1)
+    w = io.BytesIO()
+    pickle.dump(header, w, -1)
     serialize_to(result, w)
     self.socket.send(w.getvalue())
 
@@ -257,7 +258,7 @@ class Server(object):
 
   def timings(self):
     return '\n'.join(['%s: %f' % (m, self._timers[m].get())
-                      for m in self._methods.keys()])
+                      for m in list(self._methods.keys())])
 
   def _diediedie(self, handle, req):
     handle.done(None)
@@ -291,8 +292,8 @@ class Server(object):
     #util.log_info('Reading...')
 
     data = socket.recv()
-    reader = cStringIO.StringIO(data)
-    header = cPickle.load(reader)
+    reader = io.BytesIO(data)
+    header = pickle.load(reader)
 
     #util.log_info('Call[%s] %s %s', header['method'], self._socket.addr, header['rpc_id'])
     handle = PendingRequest(socket, header['rpc_id'])
@@ -336,18 +337,18 @@ class Client(object):
     self._socket.connect()
     self._futures = {}
     self._lock = threading.Lock()
-    self._rpc_id = xrange(10000000).__iter__()
+    self._rpc_id = range(10000000).__iter__()
 
   def __reduce__(self, *args, **kwargs):
-    raise cPickle.PickleError('Not pickleable.')
+    raise pickle.PickleError('Not pickleable.')
 
   def send(self, method, request):
     with self._lock:
-      rpc_id = self._rpc_id.next()
+      rpc_id = next(self._rpc_id)
       header = { 'method' : method, 'rpc_id' : rpc_id }
 
-      w = cStringIO.StringIO()
-      cPickle.dump(header, w, -1)
+      w = io.BytesIO()
+      pickle.dump(header, w, -1)
       if isinstance(request, PickledData):
         w.write(request.data)
       else:
@@ -371,8 +372,8 @@ class Client(object):
 
   def handle_read(self, socket):
     data = socket.recv()
-    reader = cStringIO.StringIO(data)
-    header = cPickle.load(reader)
+    reader = io.BytesIO(data)
+    header = pickle.load(reader)
     resp = read(reader)
     #resp = cPickle.load(reader)
     rpc_id = header['rpc_id']

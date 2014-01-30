@@ -4,7 +4,7 @@ import collections
 from spartan import util
 from spartan.util import Assert
 import numpy as np
-import slicing
+from . import slicing
 
 class TileExtent(object):
   '''A rectangular tile of a distributed array.
