@@ -11,13 +11,15 @@ which can then be executed or converted to parakeet code.
 import tempfile
 import imp
 import time
+import numpy as np
 
 from spartan import util
 from spartan.util import Assert
-from spartan.node import Node
-from traits.api import Str, List, Function, PythonValue
+from spartan.node import Node, indent
+from traits.api import Str, List, Function, PythonValue, Int
 
 var_id = iter(xrange(1000000))
+expr_id = iter(xrange(1000000))
 
 class CodegenException(Exception): pass
 
@@ -50,10 +52,14 @@ class LocalExpr(Node):
 
 class LocalInput(LocalExpr):
   '''An externally supplied input.'''
-  idx = Str() 
+  idx = Str()
 
-  def __str__(self):
-    return 'V(%s)' % self.idx
+  def __init__(self, *args, **kw):
+    LocalExpr.__init__(self, *args, **kw)
+    assert self.idx != ''
+
+  def pretty_str(self):
+    return '%s' % self.idx
 
   def evaluate(self, ctx):
     return ctx.inputs[self.idx]
@@ -80,7 +86,15 @@ class FnCallExpr(LocalExpr):
     if self.kw is None: self.kw = {}
     assert self.fn is not None
 
+  def pretty_str(self):
+    # drop modules from the prettified string
+    pretty_fn = self.fn_name().split('.')[-1]
+    return '%s(%s)' % (
+      pretty_fn, indent(','.join([v.pretty_str() for v in self.deps if not isinstance(v, LocalInput)]))
+    )
+
   def fn_name(self):
+    '''Return a name for this function suitable for calling.'''
     if self.pretty_fn:
       return self.pretty_fn
 
@@ -94,6 +108,7 @@ class FnCallExpr(LocalExpr):
 
   def evaluate(self, ctx):
     deps = [d.evaluate(ctx) for d in self.deps]
+
     #util.log_info('Evaluating %s.%d [%s]', self.fn_name(), self.id, deps)
     return self.fn(*deps, **self.kw)
 
@@ -144,6 +159,9 @@ class ParakeetExpr(LocalExpr):
 
   def fn_name(self):
     return 'parakeet'
+
+  def pretty_str(self):
+    return 'parakeet_op'
 
   def evaluate(self, ctx):
     names = self.input_names()

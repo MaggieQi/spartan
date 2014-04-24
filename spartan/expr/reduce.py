@@ -9,6 +9,7 @@ import collections
 
 from ..array import extent, distarray
 from ..expr.local import make_var, LocalExpr, LocalReduceExpr, LocalInput, LocalCtx
+from spartan.node import indent
 from ..util import Assert
 from . import broadcast
 from .base import Expr, ListExpr
@@ -33,7 +34,13 @@ def _reduce_mapper(ex, children, child_to_var, op, axis, output):
 
   local_values = {}
   for i in range(len(children)):
-    lv = children[i].fetch(ex)
+    if isinstance(children[i], broadcast.Broadcast):
+      # When working with a broadcasted array, it is more efficient to fetch the corresponding
+      # section of the non-broadcasted array and have Numpy broadcast internally, than 
+      # to broadcast ahead of time.
+      lv = children[i].fetch_base_tile(ex)
+    else:
+      lv = children[i].fetch(ex)
     local_values[child_to_var[i]] = lv
   
   # Set extent and axis information for user functions
@@ -83,8 +90,9 @@ class ReduceExpr(Expr):
     input_shape = tuple([child_shape[i] for i in range(len(child_shape))])
     return extent.shape_for_reduction(input_shape, self.axis)
   
-  def label(self):
-    return 'reduce(%s)' % self.op.fn.__name__
+  def pretty_str(self):
+    return 'Reduce(%s, axis=%s, %s)' % (self.op.fn.__name__, self.axis,
+                                        indent(self.children.pretty_str()))
   
   def _evaluate(self, ctx, deps):
     children = deps['children']

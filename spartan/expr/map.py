@@ -18,6 +18,7 @@ import collections
 
 from .. import util, blob_ctx
 from ..array import distarray, tile
+from spartan.node import indent
 from ..util import Assert
 from .base import ListExpr, Expr, as_array
 from .local import LocalExpr, LocalCtx, make_var, LocalInput, LocalMapExpr
@@ -45,7 +46,13 @@ def tile_mapper(ex, children, child_to_var, op):
 
   local_values = {}
   for i in range(len(children)):
-    lv = children[i].fetch(ex)
+    if isinstance(children[i], broadcast.Broadcast):
+      # When working with a broadcasted array, it is more efficient to fetch the corresponding
+      # section of the non-broadcasted array and have Numpy broadcast internally, than 
+      # to broadcast ahead of time.
+      lv = children[i].fetch_base_tile(ex)
+    else:
+      lv = children[i].fetch(ex)
     local_values[child_to_var[i]] = lv
 
   # Not all Numpy operations are compatible with mixed sparse and dense arrays.  
@@ -88,8 +95,9 @@ class MapExpr(Expr):
   child_to_var = Instance(list)
   op = Instance(LocalExpr) 
 
-  def label(self):
-    return 'map(%s)' % self.op.fn.__name__
+  def pretty_str(self):
+    return 'Map(%s, %s)' % (self.op.pretty_str(),
+                            indent(self.children.pretty_str()))
 
   def compute_shape(self):
     '''MapTiles retains the shape of inputs.
@@ -107,8 +115,7 @@ class MapExpr(Expr):
     children = deps['children']
     child_to_var = deps['child_to_var']
     op = self.op
-
-    #util.log_info('Codegen for expression: %s', local.codegen(op))
+    util.log_debug('Evaluating %s.%d', self.op.fn_name(), self.expr_id)
 
     children = broadcast.broadcast(children)
     largest = distarray.largest_value(children)
