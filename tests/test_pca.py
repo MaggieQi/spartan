@@ -13,8 +13,8 @@ class TestPCA(test_common.ClusterTest):
     ctx = blob_ctx.get() 
     A =  expr.randn(*DIM, tile_hint=(DIM[0]/ctx.num_workers, DIM[1])).force()
     
-    m = PCA(N_COMPONENTS)
     m2 = SK_PCA(N_COMPONENTS)
+    m = PCA(N_COMPONENTS)
 
     m.fit(A)
     m2.fit(A.glom())

@@ -45,8 +45,8 @@ def solve(A, AT, desired_rank, is_symmetric=False):
       w = expr.dot(A, v_next_expr).glom().reshape(n)
     else:
       st = time.time()
-      w = expr.dot(A, v_next_expr, tile_hint=(min(*A.tile_shape()), 1)).force()
-      w = expr.dot(AT, w, tile_hint=(min(*A.tile_shape()), 1)).glom().reshape(n)
+      w = expr.dot(A, v_next_expr)#, tile_hint=(min(*A.tile_shape()), 1))
+      w = expr.dot(AT, w).glom().reshape(n)
       print "mat : ", time.time() - st
     
     alpha[i] = np.dot(w, v_next)
