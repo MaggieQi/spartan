@@ -14,8 +14,8 @@ worker_list=$2
 tile_assignment_strategy=round_robin
 default_rpc_timeout=3000000
 
+hosts=beaker-18:4,beaker-19:4,beaker-16:4,beaker-15:4,beaker-23:4,beaker-24:4,beaker-20:4,beaker-22:4
 
-hosts=172.31.12.59:2,172.31.10.225:2,172.31.10.237:2,172.31.11.8:2,172.31.13.194:2,172.31.0.207:2,172.31.3.213:2,172.31.3.123:2,172.31.10.193:2,172.31.4.244:2,172.31.2.245:2,172.31.4.222:2,172.31.11.94:2,172.31.8.173:2,172.31.12.49:2,172.31.7.37:2
 
 function kill_all_python_process {
     killall -uchenqi python;
