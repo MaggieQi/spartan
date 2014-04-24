@@ -14,7 +14,7 @@ def benchmark_spectral_clustering(ctx, timer):
                   tile_hint=(N_PTS / ctx.num_workers, N_DIM)).force()
 
   t1 = datetime.now()
-  cluster_result = spectral_cluster(pts, N_CENTERS, ITER)
+  cluster_result = spectral_cluster(pts, N_CENTERS, ITER).glom()
   t2 = datetime.now()
   print 'spectral_cluster time:%s ms' % millis(t1, t2)
   

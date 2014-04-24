@@ -12,7 +12,7 @@ def benchmark_canopy_clustering(ctx, timer):
                   tile_hint=(N_PTS / ctx.num_workers, N_DIM)).force()
 
   t1 = datetime.now()
-  cluster_result = canopy_cluster(pts)
+  cluster_result = canopy_cluster(pts).force()
   t2 = datetime.now()
   print 'canopy_cluster time:%s ms' % millis(t1, t2)
   

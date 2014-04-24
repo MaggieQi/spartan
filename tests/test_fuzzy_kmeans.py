@@ -14,7 +14,7 @@ def benchmark_fuzzy_kmeans(ctx, timer):
                   tile_hint=(N_PTS / ctx.num_workers, N_DIM)).force()
 
   t1 = datetime.now()
-  cluster_result = fuzzy_kmeans(pts, k=N_CENTERS, num_iter=ITER)
+  cluster_result = fuzzy_kmeans(pts, k=N_CENTERS, num_iter=ITER).force()
   t2 = datetime.now()
   time_cost = millis(t1, t2)
   print 'fuzzy_cluster time:%s ms, per_iter:%s ms' % (time_cost, time_cost/ITER)
