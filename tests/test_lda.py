@@ -12,7 +12,7 @@ def benchmark_lda(ctx, timer):
   
   print "#worker:", ctx.num_workers
   NUM_TERMS = 3000
-  NUM_DOCS = 100 * ctx.num_workers
+  NUM_DOCS = 200 * ctx.num_workers
   
   # create data
   # NUM_TERMS = 41807
@@ -21,7 +21,7 @@ def benchmark_lda(ctx, timer):
   
   terms_docs_matrix = expr.randint(NUM_TERMS, NUM_DOCS, low=0, high=100, tile_hint=(NUM_TERMS, NUM_DOCS/ctx.num_workers)).force()
   
-  max_iter = 1
+  max_iter = 3
   k_topics = 10
   
   t1 = datetime.now()

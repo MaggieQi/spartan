@@ -2,6 +2,9 @@ import numpy as np
 import spartan
 from spartan import expr, core, blob_ctx, array
 from sklearn.ensemble import RandomForestClassifier as SKRF
+import time
+from sys import stderr
+import socket
 
 def _build_mapper(ex, 
                   X, 
@@ -24,8 +27,12 @@ def _build_mapper(ex,
   """
   # The number of rows decides how many trees this kernel will build.
   n_estimators = ex.shape[0] 
+  st = time.time()
   X = X.glom()
   y = y.glom()
+  print >>stderr, socket.gethostname(), "glom : ", time.time() - st 
+  
+  st = time.time()
   rf = SKRF(n_estimators = n_estimators,
                               criterion = criterion,
                               max_depth = max_depth,
@@ -38,6 +45,7 @@ def _build_mapper(ex,
   rf.fit(X, y) 
   result = core.LocalKernelResult()
   result.result = rf
+  print >>stderr, socket.gethostname(), time.time() - st 
   return result
 
 class RandomForestClassifier(object):

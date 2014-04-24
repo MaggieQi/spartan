@@ -7,6 +7,7 @@ from spartan import util
 from spartan.util import Assert
 from spartan import sparse
 
+
 TYPE_EMPTY = 0
 TYPE_DENSE = 1
 TYPE_MASKED = 2
@@ -96,7 +97,6 @@ class Tile(object):
     # dense, check our mask and return a masked segment or unmasked if
     # the mask is all filled for the selected region.
     self._initialize_mask()
-    
     #return self.data[subslice]
     if self.mask is None or np.all(self.mask[subslice]):
       #util.log_info('%s %s %s', self.data, self.mask, subslice)
@@ -106,7 +106,6 @@ class Tile(object):
     mask = self.mask[subslice]
     result = np.ma.masked_all(data.shape, dtype=data.dtype)
     result[mask] = data[mask]
-
     #util.log_info('%s %s', self.id, result)
     return result
 

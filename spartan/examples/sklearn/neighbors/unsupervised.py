@@ -1,6 +1,9 @@
 import numpy as np
 from spartan import expr, core, array
 from sklearn.neighbors import NearestNeighbors as SKNN
+import time
+from sys import stderr
+import socket
 
 def _knn_mapper(ex,
                 X,
@@ -27,6 +30,8 @@ def _knn_mapper(ex,
   result = core.LocalKernelResult()
   row_start = ex.ul[0]
   col_start = ex.ul[1]
+
+  st = time.time()
  
   """
   If it's not started with the first column, we skip. 
@@ -49,6 +54,7 @@ def _knn_mapper(ex,
   ind += row_start
   result = core.LocalKernelResult()
   result.result = (dist, ind)
+  print >>stderr, socket.gethostname(),  "finish knn : ", time.time() - st
   return result
 
 

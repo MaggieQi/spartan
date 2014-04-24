@@ -13,7 +13,7 @@ class TestLogisticRegression(test_common.ClusterTest):
 
 def benchmark_logreg(ctx, timer):
   print "#worker:", ctx.num_workers
-  N_EXAMPLES = 20000000 * ctx.num_workers
+  N_EXAMPLES = 60000000 * ctx.num_workers
   x = expr.eager(expr.rand(N_EXAMPLES, N_DIM, tile_hint=(N_EXAMPLES / ctx.num_workers, N_DIM)))
   y = expr.eager(expr.rand(N_EXAMPLES, 1, tile_hint=(N_EXAMPLES / ctx.num_workers, 1)))
   start = time.time()

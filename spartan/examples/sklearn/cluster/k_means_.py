@@ -3,6 +3,9 @@ import spartan
 from spartan import expr, util
 import parakeet
 from spartan.array import distarray, extent
+import time
+import socket
+from sys import stderr
 
 @util.synchronized
 @parakeet.jit
@@ -25,6 +28,7 @@ def _find_closest(pts, centers):
 
 def _find_cluster_mapper(inputs, ex, d_pts, old_centers, 
                          new_centers, new_counts, labels):
+  st = time.time()
   centers = old_centers
   pts = d_pts.fetch(ex)
   closest = _find_closest(pts, centers)
@@ -71,7 +75,7 @@ class KMeans(object):
     centers : numpy.ndarray. The initial centers. If None, it will be randomly generated.
     """
     num_dim = X.shape[1]
-    labels = expr.zeros((X.shape[0],1), dtype=np.int)
+    labels = expr.zeros((X.shape[0],1), dtype=np.int, tile_hint=X.tile_shape()).force()
   
     if centers is None:
       centers = np.random.rand(self.n_clusters, num_dim)
@@ -108,5 +112,5 @@ class KMeans(object):
 
       new_centers = new_centers / new_counts
       centers = new_centers
-
-    return centers, labels.glom().reshape(X.shape[0])
+ 
+    return centers, labels#.glom().reshape(X.shape[0])

@@ -1,6 +1,7 @@
 import numpy as np
-from spartan import expr, util
+from spartan import expr, util, blob_ctx
 import math
+import time
 
 def solve(A, AT, desired_rank, is_symmetric=False):
   '''
@@ -18,6 +19,7 @@ def solve(A, AT, desired_rank, is_symmetric=False):
   
   # Calculate two more eigenvalues, but we only keep the largest desired_rank
   # one. Doing this to keep the result consistent with scipy.sparse.linalg.svds.
+  ctx = blob_ctx.get()
   desired_rank += 2
 
   n = A.shape[1]
@@ -37,12 +39,16 @@ def solve(A, AT, desired_rank, is_symmetric=False):
   for i in range(0, desired_rank):
     util.log_info("Iter : %s", i)
     
-    if is_symmetric:
-      w = expr.dot(A, v_next.reshape(n, 1)).glom().reshape(n)
-    else:
-      w = expr.dot(A, v_next.reshape(n, 1))
-      w = expr.dot(AT, w).glom().reshape(n)
+    v_next_expr = expr.from_numpy(v_next.reshape(n, 1), tile_hint=(n/ctx.num_workers, 1))
 
+    if is_symmetric:
+      w = expr.dot(A, v_next_expr).glom().reshape(n)
+    else:
+      st = time.time()
+      w = expr.dot(A, v_next_expr, tile_hint=(min(*A.tile_shape()), 1)).force()
+      w = expr.dot(AT, w, tile_hint=(min(*A.tile_shape()), 1)).glom().reshape(n)
+      print "mat : ", time.time() - st
+    
     alpha[i] = np.dot(w, v_next)
     w = w - alpha[i] * v_next - beta[i] * v_prev
     
@@ -57,7 +63,7 @@ def solve(A, AT, desired_rank, is_symmetric=False):
     v_prev = v_next
     v_next = w / beta[i+1]
     V[:, i] = v_prev
-  
+
   # Create tridiag matrix with size (desired_rank X desired_rank)  
   tridiag = np.diag(alpha)
   for i in range(0, desired_rank-1):
