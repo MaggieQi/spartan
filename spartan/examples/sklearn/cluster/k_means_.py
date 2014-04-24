@@ -74,6 +74,7 @@ class KMeans(object):
     X : spartan matrix, shape=(n_samples, n_features). It should be tiled by rows.
     centers : numpy.ndarray. The initial centers. If None, it will be randomly generated.
     """
+    X = expr.force(X)
     num_dim = X.shape[1]
     labels = expr.zeros((X.shape[0],1), dtype=np.int, tile_hint=X.tile_shape()).force()
   

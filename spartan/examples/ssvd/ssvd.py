@@ -55,6 +55,6 @@ def svd(A, k=None):
 
   st = time.time()
   U = expr.dot(Q, U_).force()
-  print "U:", time.time() - st
   V = np.dot(np.dot(expr.transpose(B).glom(), U_), np.diag(np.ones(S.shape[0]) / S))
+  print "U:", time.time() - st
   return U, S, V.T 
