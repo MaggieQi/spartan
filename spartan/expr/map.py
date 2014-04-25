@@ -50,8 +50,8 @@ def tile_mapper(ex, children, child_to_var, op):
       # When working with a broadcasted array, it is more efficient to fetch the corresponding
       # section of the non-broadcasted array and have Numpy broadcast internally, than 
       # to broadcast ahead of time.
-      #lv = children[i].fetch_base_tile(ex)
-      lv = children[i].fetch(ex)
+      lv = children[i].fetch_base_tile(ex)
+      #lv = children[i].fetch(ex)
     else:
       lv = children[i].fetch(ex)
     local_values[child_to_var[i]] = lv
