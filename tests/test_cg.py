@@ -41,7 +41,8 @@ def numpy_cg(A, num_iter):
 def benchmark_cg(ctx, timer):
   print "#worker:", ctx.num_workers
   l = int(math.sqrt(ctx.num_workers))
-  n = 10000 * l
+  #n = 10000 * l
+  n = 40 * l
   la = 20
   niter = 5
   tile_hint = (n/l, n/l)
@@ -52,10 +53,13 @@ def benchmark_cg(ctx, timer):
   A = expr.rand(n, n, tile_hint=tile_hint)
   A = (A + expr.transpose(A))*0.5
   
-  A = expr.eager(A - la * expr.sparse_diagonal((n,n), tile_hint=tile_hint))
+  I = expr.sparse_diagonal((n,n), tile_hint=tile_hint) * la
+  I.force()
+  A = A - I
+  A.force()
 
   #x1 = numpy_cg(A.glom(), niter)
-
+  util.log_warn('begin cg!')
   t1 = datetime.now()
   x2 = conj_gradient(A, niter).glom()
   t2 = datetime.now()
