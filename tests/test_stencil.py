@@ -14,8 +14,9 @@ from spartan.expr import stencil
 
 ONE_TILE = (10000, 10000, 10000, 10000)
 
-@with_ctx
-def test_stencil(ctx):
+#@with_ctx
+#def test_stencil(ctx):
+def benchmark_stencil(ctx, timer):
   st = time.time()
 
   IMG_SIZE = int(8 * math.sqrt(ctx.num_workers))
@@ -37,8 +38,9 @@ def test_stencil(ctx):
   ed = time.time()
   print ed - st
 
-@with_ctx
+#@with_ctx
 def test_local_convolve(ctx):
+#def benchmark_convolve(ctx, timer):
   F = 16
   filters = np.ones((F, 3, 5, 5))
   for N in [1, 4, 16]:
@@ -46,3 +48,6 @@ def test_local_convolve(ctx):
     st = time.time()
     stencil._convolve(images, filters)
     print N, F, time.time() - st
+
+if __name__ == '__main__':
+  test_common.run(__file__)

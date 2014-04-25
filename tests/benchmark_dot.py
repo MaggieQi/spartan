@@ -6,6 +6,7 @@ import test_common
 import math
 
 def benchmark_matmul(ctx, timer):
+  print "#workers:", ctx.num_workers
   N = int(1000 * math.pow(ctx.num_workers, 1.0 / 3.0))
   #N = 4000
   M = util.divup(N, ctx.num_workers)

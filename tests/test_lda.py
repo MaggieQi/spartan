@@ -11,10 +11,8 @@ from datetime import datetime
 def benchmark_lda(ctx, timer):
   
   print "#worker:", ctx.num_workers
-  NUM_TERMS = 64
-  NUM_DOCS = 32 * ctx.num_workers
-  #NUM_TERMS = 3000
-  #NUM_DOCS = 200 * ctx.num_workers
+  NUM_TERMS = 1000
+  NUM_DOCS = 200 * ctx.num_workers
   
   # create data
   # NUM_TERMS = 41807

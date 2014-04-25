@@ -12,6 +12,8 @@ from datetime import datetime
 #def test_pr(ctx):
 def benchmark_cholesky(ctx, timer):
   print "#worker:", ctx.num_workers
+
+  #n = int(math.pow(ctx.num_workers, 1.0 / 3.0))
   n = int(math.sqrt(ctx.num_workers))
   ARRAY_SIZE = 1600 * n
   
