@@ -23,17 +23,19 @@ cpdef sparse_to_dense_update(np.ndarray[ndim=2, dtype=DTYPE_FLT] target,
                              np.ndarray[ndim=1, dtype=DTYPE_INT] rows,
                              np.ndarray[ndim=1, dtype=DTYPE_INT] cols,
                              np.ndarray[ndim=1, dtype=DTYPE_FLT] data,
-                             int reducer) nogil:
+                             int reducer):
   
   cdef int i
-  for i in xrange(rows.shape[0]):
-    if reducer == REDUCE_NONE or mask[rows[i], cols[i]] == 0:
-      target[rows[i], cols[i]] = data[i]
-      mask[rows[i], cols[i]] = 1
-    elif reducer == REDUCE_ADD:
-      target[rows[i], cols[i]] = target[rows[i], cols[i]] + data[i]
-    elif reducer == REDUCE_MUL:
-      target[rows[i], cols[i]] = target[rows[i], cols[i]] * data[i]
+  cdef int size = rows.shape[0]
+  with nogil:
+    for i in xrange(size):
+      if reducer == REDUCE_NONE or mask[rows[i], cols[i]] == 0:
+        target[rows[i], cols[i]] = data[i]
+        mask[rows[i], cols[i]] = 1
+      elif reducer == REDUCE_ADD:
+        target[rows[i], cols[i]] = target[rows[i], cols[i]] + data[i]
+      elif reducer == REDUCE_MUL:
+        target[rows[i], cols[i]] = target[rows[i], cols[i]] * data[i]
     
 @cython.boundscheck(False) # turn of bounds-checking for entire function   
 def dot_coo_dense_dict(X not None, np.ndarray[ndim=2, dtype=DTYPE_FLT] W not None):
