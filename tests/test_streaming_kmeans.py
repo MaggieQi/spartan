@@ -5,7 +5,8 @@ from spartan import expr
 from datetime import datetime    
 
 def benchmark_streaming_kmeans(ctx, timer):
-  N_PTS = 100 * ctx.num_workers
+  #N_PTS = 100 * ctx.num_workers
+  N_PTS = 100 * 64
   N_DIM = 2
   N_CENTERS = 5
   

@@ -290,10 +290,11 @@ def _parakeet_codegen(op):
   fn = '\n'.join(module_prelude)
   fn = fn + fn_prelude
   fn = fn + 'def _jit_fn'
-  fn = fn + '(%s):\n  ' % ','.join(op.input_names())
+  fn = fn + '(%s):\n  ' % ','.join(['key_%s'%i for i in range(len(op.input_names()))])
   fn = fn + 'return ' + op_code
   fn = fn + '\n\n'
-
+  #util.log_debug(fn)
+  
   # verify we can compile before proceeding
   local.compile_parakeet_source(fn)
   return fn

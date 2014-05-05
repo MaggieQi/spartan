@@ -5,7 +5,8 @@ from spartan import expr
 from datetime import datetime    
 
 def benchmark_canopy_clustering(ctx, timer):
-  N_PTS = 60000 * ctx.num_workers
+  #N_PTS = 60000 * ctx.num_workers
+  N_PTS = 30000 * 64
   N_DIM = 2
 
   pts = expr.rand(N_PTS, N_DIM,

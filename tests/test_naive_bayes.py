@@ -20,7 +20,8 @@ def _init_label_mapper(array, ex):
 def benchmark_naive_bayes(ctx, timer):
   
   print "#worker:", ctx.num_workers
-  N = 1000000 * ctx.num_workers
+  #N = 1000000 * ctx.num_workers
+  N = 500000 * 64
   D = 128
   
   # create data

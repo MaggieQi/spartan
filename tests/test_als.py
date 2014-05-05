@@ -8,7 +8,8 @@ from datetime import datetime
 #def test_pr(ctx):
 def benchmark_als(ctx, timer):
   print "#worker:", ctx.num_workers
-  USER_SIZE = 400 * ctx.num_workers
+  #USER_SIZE = 400 * ctx.num_workers
+  USER_SIZE = 200 * 64
   MOVIE_SIZE = 12800
   num_features = 20
   num_iter = 5

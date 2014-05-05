@@ -5,7 +5,8 @@ from spartan import expr
 from datetime import datetime    
 
 def benchmark_spectral_clustering(ctx, timer):
-  N_PTS = 500 * ctx.num_workers
+  #N_PTS = 500 * ctx.num_workers
+  N_PTS = 50 * 64
   N_DIM = 2
   ITER = 5
   N_CENTERS = 5

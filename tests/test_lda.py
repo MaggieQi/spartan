@@ -12,8 +12,9 @@ def benchmark_lda(ctx, timer):
   
   print "#worker:", ctx.num_workers
   NUM_TERMS = 1000
-  NUM_DOCS = 200 * ctx.num_workers
-  
+  #NUM_DOCS = 200 * ctx.num_workers
+  NUM_DOCS = 100 * 64
+
   # create data
   # NUM_TERMS = 41807
   # NUM_DOCS = 21578

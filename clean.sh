@@ -1,6 +1,6 @@
 #!/bin/bash
 curdir=`pwd`
-dirs="tests spartan spartan/array spartan/examples spartan/expr spartan/rpc" 
+dirs="tests spartan spartan/array spartan/rpc spartan/examples spartan/expr spartan/rpc" 
 for dir in $dirs
 do
     workdir="$curdir/$dir"

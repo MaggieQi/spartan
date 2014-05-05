@@ -8,7 +8,7 @@ from spartan import expr, util, eager, force
 import test_common
 
 baseline = {1:8.1, 2:9.3, 4:11.6, 8:17.6, 16:20.8, 32:22.1, 64:23.4}
-num_iter = 5
+num_iter = 3
 
 def millis(t1, t2):
   dt = t2 - t1
@@ -125,7 +125,7 @@ def benchmark_pr(ctx, timer):
   #                          tile_hint=wts_tile_hint))
 
   wts = expr.eager(pagerank_sparse(num_pages, num_outlinks, same_site_prob, wts_tile_hint))
-  
+
   #res = wts.glom().todense()
   #for i in range(res.shape[0]):
   #  l = []
