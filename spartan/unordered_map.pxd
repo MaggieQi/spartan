@@ -1,6 +1,6 @@
 from libcpp.utility cimport pair
  
-cdef extern from "<tr1/unordered_map>" namespace "std::tr1":
+cdef extern from "<unordered_map>" namespace "std":
     cdef cppclass unordered_map[T, U]:
         cppclass iterator:
             pair[T, U]& operator*() nogil
@@ -27,6 +27,6 @@ cdef extern from "<tr1/unordered_map>" namespace "std::tr1":
         iterator insert(iterator, pair[T, U]) nogil
         void insert(input_iterator, input_iterator)
         size_t max_size() nogil
-        void rehash(size_t) nogil
+        void rehash(size_t)
         size_t size() nogil
         void swap(unordered_map&) nogil

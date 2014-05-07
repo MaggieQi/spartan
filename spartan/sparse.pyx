@@ -2,12 +2,15 @@
 from cython.operator cimport dereference as deref, preincrement as inc
 from libcpp.pair cimport pair
 from libcpp.map cimport map
+from cpython.pycapsule cimport PyCapsule_New, PyCapsule_GetPointer
 from unordered_map cimport unordered_map
 import numpy
 import scipy.sparse
 cimport numpy as np
 cimport cython
 from datetime import datetime
+import time
+from spartan import util
 
 ctypedef np.float32_t DTYPE_FLT
 ctypedef np.int32_t DTYPE_INT
@@ -25,8 +28,7 @@ cpdef sparse_to_dense_update(np.ndarray[ndim=2, dtype=DTYPE_FLT] target,
                              np.ndarray[ndim=1, dtype=DTYPE_FLT] data,
                              int reducer):
   
-  cdef int i
-  cdef int size = rows.shape[0]
+  cdef int i, size = rows.size
   with nogil:
     for i in xrange(size):
       if reducer == REDUCE_NONE or mask[rows[i], cols[i]] == 0:
@@ -36,71 +38,69 @@ cpdef sparse_to_dense_update(np.ndarray[ndim=2, dtype=DTYPE_FLT] target,
         target[rows[i], cols[i]] = target[rows[i], cols[i]] + data[i]
       elif reducer == REDUCE_MUL:
         target[rows[i], cols[i]] = target[rows[i], cols[i]] * data[i]
-    
-@cython.boundscheck(False) # turn of bounds-checking for entire function   
-def dot_coo_dense_dict(X not None, np.ndarray[ndim=2, dtype=DTYPE_FLT] W not None):
-    """Multiply a sparse coo matrix by a dense vector
-    
-    Parameters
-    ----------
-    X : scipy.sparse.coo_matrix
-        A sparse matrix, of size N x M
-    W : np.ndarray[dtype=DTYPE_FLT, ndim=1]
-        A dense vector, of size M.
         
-    Returns
-    -------
-    A : coo matrix, the result of multiplying X by W.
-    """
+@cython.boundscheck(False)
+def create_unordered_map():
+    cdef unordered_map[DTYPE_INT, DTYPE_FLT]* result = new unordered_map[DTYPE_INT, DTYPE_FLT]()
+    #result.rehash(1000)
+    return PyCapsule_New(<void *>result, 'result', NULL)
 
-    if X.shape[1] != W.shape[0] and W.shape[1] != 1:
-        raise ValueError('Matrices are not aligned!')
-      
-    cdef np.ndarray[DTYPE_INT, ndim=1] rows = X.row
-    cdef np.ndarray[DTYPE_INT, ndim=1] cols = X.col
-    cdef np.ndarray[DTYPE_FLT, ndim=1] data = X.data
-    
-    #cdef map[DTYPE_INT, DTYPE_FLT] result
-    cdef dict result = {}
-    #cdef np.ndarray[DTYPE_FLT] result
-    #result = numpy.zeros(X.shape[0], dtype=numpy.float64)
-    
-    cdef int i   
-    for i in xrange(rows.shape[0]):
-        #result[rows[i]] += data[i] * W[cols[i], 0]
-        if not result.has_key(rows[i]):
-            result[rows[i]] = data[i] * W[cols[i], 0]
-        else:
-            result[rows[i]] += data[i] * W[cols[i], 0]
-    
-    cdef int size = len(result)
-    #cdef int size = result.size()
+@cython.boundscheck(False)
+def generate_reduction_data(local_result):
+    cdef unordered_map[DTYPE_INT, DTYPE_FLT]* result = <unordered_map[DTYPE_INT, DTYPE_FLT]*>(PyCapsule_GetPointer(local_result, 'result'))
+    #util.log_warn('reduction: local_result:%s', result.size())
+    cdef int size = result.size()
     cdef np.ndarray[DTYPE_INT] new_rows = numpy.zeros(size, dtype=numpy.int32)
     cdef np.ndarray[DTYPE_INT] new_cols = numpy.zeros(size, dtype=numpy.int32)
     cdef np.ndarray[DTYPE_FLT] new_data = numpy.zeros(size, dtype=numpy.float32)
-
-    result_list = sorted(result.iteritems(), key=lambda d:d[0])
-    
-    i = 0
-    for (key, val) in result_list:
-        new_rows[i] = key
-        new_data[i] = val
+  
+    cdef unordered_map[DTYPE_INT, DTYPE_FLT].iterator iter = result.begin()
+    cdef int i = 0
+    while iter != result.end():
+        new_rows[i] = deref(iter).first
         i = i + 1
+        inc(iter)
+    
+    new_rows.sort()
+    
+    for i in xrange(size):
+      new_data[i] = result.at(new_rows[i])
+    
+    del result
+    return new_rows, new_cols, new_data
+    
+@cython.boundscheck(False) # turn of bounds-checking for entire function   
+def dot_coo_dense_unordered_map(X not None, np.ndarray[ndim=2, dtype=DTYPE_FLT] W not None, local_result):
+    """Multiply a sparse coo matrix by a dense vector
+    
+    Parameters
+    ----------
+    X : scipy.sparse.coo_matrix
+        A sparse matrix, of size N x M
+    W : np.ndarray[dtype=DTYPE_FLT, ndim=1]
+        A dense vector, of size M.
+        
+    Returns
+    -------
+    A : coo matrix, the result of multiplying X by W.
+    """
+    if X.shape[1] != W.shape[0] and W.shape[1] != 1:
+        raise ValueError('Matrices are not aligned!')
+ 
+    cdef unordered_map[DTYPE_INT, DTYPE_FLT]* result = <unordered_map[DTYPE_INT, DTYPE_FLT]*>(PyCapsule_GetPointer(local_result, 'result'))
 
-    #cdef pair[DTYPE_INT, DTYPE_FLT] entry
-    #cdef map[DTYPE_INT, DTYPE_FLT].iterator iter = result.begin()
-    #i = 0
-    #while iter != result.end():
-    #    entry = deref(iter)
-    #    new_rows[i] = entry.first
-    #    new_data[i] = entry.second
-    #    i = i + 1
-    #    inc(iter)
-
-    return scipy.sparse.coo_matrix((new_data, (new_rows, new_cols)), shape=(X.shape[0], 1))
+    cdef np.ndarray[DTYPE_INT, ndim=1] rows = X.row
+    cdef np.ndarray[DTYPE_INT, ndim=1] cols = X.col
+    cdef np.ndarray[DTYPE_FLT, ndim=1] data = X.data
+    
+    cdef int i   
+    for i in xrange(rows.size):
+        result[0][rows[i]] += data[i] * W[cols[i], 0]
+  
+    return None
 
 @cython.boundscheck(False) # turn of bounds-checking for entire function   
-def dot_coo_dense_unordered_map(X not None, np.ndarray[ndim=2, dtype=DTYPE_FLT] W not None):
+def dot_coo_dense_unordered_map_old(X not None, np.ndarray[ndim=2, dtype=DTYPE_FLT] W not None):
     """Multiply a sparse coo matrix by a dense vector
     
     Parameters
@@ -122,19 +122,15 @@ def dot_coo_dense_unordered_map(X not None, np.ndarray[ndim=2, dtype=DTYPE_FLT] 
     cdef np.ndarray[DTYPE_INT, ndim=1] cols = X.col
     cdef np.ndarray[DTYPE_FLT, ndim=1] data = X.data
     
-    cdef int row_size = rows.size
-    
     cdef unordered_map[DTYPE_INT, DTYPE_FLT] result
-    cdef int i
-     
+    cdef int i, row_size = rows.size
+    result.rehash(row_size)
+
     with nogil:
-        result.rehash(row_size)
-          
-        for i in xrange(row_size):
-            result[rows[i]] += data[i] * W[cols[i], 0]
+      for i in xrange(row_size):
+        result[rows[i]] += data[i] * W[cols[i], 0]
     
     cdef int size = result.size()
-    
     cdef np.ndarray[DTYPE_INT] new_rows = numpy.zeros(size, dtype=numpy.int32)
     cdef np.ndarray[DTYPE_INT] new_cols = numpy.zeros(size, dtype=numpy.int32)
     cdef np.ndarray[DTYPE_FLT] new_data = numpy.zeros(size, dtype=numpy.float32)
@@ -143,17 +139,17 @@ def dot_coo_dense_unordered_map(X not None, np.ndarray[ndim=2, dtype=DTYPE_FLT] 
     cdef unordered_map[DTYPE_INT, DTYPE_FLT].iterator iter = result.begin()
     
     with nogil:
-        i = 0
-        while iter != result.end():
-            new_rows[i] = deref(iter).first
-            i = i + 1
-            inc(iter)
+      i = 0
+      while iter != result.end():
+        new_rows[i] = deref(iter).first
+        i = i + 1
+        inc(iter)
 
     new_rows.sort()
     
     with nogil:
-        for i in xrange(size):
-            new_data[i] = result[new_rows[i]]
+      for i in xrange(size):
+        new_data[i] = result[new_rows[i]]
  
     return scipy.sparse.coo_matrix((new_data, (new_rows, new_cols)), shape=(X.shape[0], 1))
 
@@ -299,6 +295,19 @@ def multiple_slice(X not None, list slices):
             l.append((tile_id, dst_slice, X[src_slice]))
         return l
 
+cdef DTYPE_INT searchsorted(np.ndarray[DTYPE_INT, ndim=1] rows, DTYPE_INT left, DTYPE_INT right, DTYPE_INT e):
+    cdef DTYPE_INT middle
+    
+    while left <= right:
+      middle = (left + right)/2
+      if rows[middle] > e:
+        right = middle - 1
+      elif rows[middle] < e:
+        left = middle + 1
+      else:
+        return middle
+    return left
+ 
 @cython.boundscheck(False) # turn of bounds-checking for entire function   
 def multiple_slice_coo(X not None, list slices):
 
@@ -306,8 +315,10 @@ def multiple_slice_coo(X not None, list slices):
     cdef np.ndarray[DTYPE_INT, ndim=1] cols = X.col
     cdef np.ndarray[DTYPE_FLT, ndim=1] data = X.data
 
+    cdef DTYPE_INT last_idx = rows.size - 1
+    
     cdef list results = []
-    cdef int idx = 0, end_idx
+    cdef DTYPE_INT idx = 0, end_idx
     for (tile_id, src_slice, dst_slice) in slices:
         if src_slice[0].stop <= rows[idx]:
             continue
@@ -315,7 +326,8 @@ def multiple_slice_coo(X not None, list slices):
         if src_slice[0].start > rows[-1]:
             break
 
-        end_idx = numpy.searchsorted(rows[idx:], src_slice[0].stop) + idx
+        end_idx = searchsorted(rows, idx, last_idx, src_slice[0].stop)
+        #end_idx = numpy.searchsorted(rows[idx:], src_slice[0].stop) + idx
         #print src_slice[0], rows[idx], rows[end_idx-1]
         results.append((tile_id, dst_slice, scipy.sparse.coo_matrix((data[idx:end_idx], (rows[idx:end_idx]-src_slice[0].start, cols[idx:end_idx])),
                                             shape=tuple([slice.stop-slice.start for slice in src_slice]))))

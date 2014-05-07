@@ -13,6 +13,7 @@ from .common import Group
 from spartan import util
 from zmq.eventloop import zmqstream, ioloop 
 from rlock import FastRLock
+from zmq.utils.garbage import gc
 
 #for client socket, we have one poller per thread.
 _poller = threading.local()
@@ -99,6 +100,8 @@ class ZMQServerLoop(object):
 
 class Socket(object):
   def __init__(self, ctx, sock_type, hostport, poller=None):
+    ctx.set(zmq.MAX_SOCKETS, 8192)
+    #gc.context = ctx
     self._zmq = ctx.socket(sock_type)
     self.addr = hostport
     self._poller = poller or get_threadlocal_poller() 
@@ -142,6 +145,8 @@ class ServerSocket(Socket):
   ''' ServerSocket use its own loop and use its own handle_read/handle_write functions. '''
   def __init__(self, ctx, sock_type, hostport):
     #Socket.__init__(self, ctx, sock_type, hostport, event_loop)
+    ctx.set(zmq.MAX_SOCKETS, 8192)
+    #gc.context = ctx
     self._zmq = ctx.socket(sock_type)
     self._listening = False
     self.addr = hostport

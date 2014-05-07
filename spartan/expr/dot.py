@@ -13,7 +13,7 @@ from .shuffle import target_mapper, notarget_mapper
 from ..core import LocalKernelResult
 from traits.api import PythonValue, HasTraits
 
-def _dot_mapper(inputs, ex, av, bv):
+def _dot_mapper(inputs, ex, av, bv, local_reduction=None):
   # read current tile of array 'a'
   ex_a = ex
   # fetch all column tiles of b that correspond to tile a's rows, i.e.
@@ -40,15 +40,18 @@ def _dot_mapper(inputs, ex, av, bv):
   #  b = sp.csr_matrix(b)
 
   #result = a.dot(b)
-
   if isinstance(a, sp.coo_matrix) and b.shape[1] == 1:
-    result = sparse.dot_coo_dense_unordered_map(a, b)
+    if local_reduction is None:
+      result = sparse.dot_coo_dense_unordered_map_old(a, b)
+    else:
+      result = sparse.dot_coo_dense_unordered_map(a, b, local_reduction)
   else:
     result = a.dot(b)
 
-  ul = np.asarray([ex_a.ul[0], 0])
-  lr = ul + result.shape
+  
   target_shape = (av.shape[0], bv.shape[1])
+  ul = np.asarray([ex_a.ul[0], 0])
+  lr = ul + target_shape
   target_ex = extent.create(ul, lr, target_shape)
 
   # util.log_info('A: %s', a.dtype)
@@ -64,6 +67,7 @@ def _dot_mapper(inputs, ex, av, bv):
 def _dot_numpy(array, ex, numpy_data=None):
   l = array.fetch(ex)
   r = numpy_data[ex.ul[1]:ex.lr[1]]
+
   yield (extent.create((ex.ul[0], 0), (ex.lr[0], r.shape[1]), (array.shape[0], r.shape[1])), l.dot(r))
 
 class DotExpr(Expr):
@@ -94,15 +98,14 @@ class DotExpr(Expr):
         tile_hint = self.tile_hint
         
       target = distarray.create((av.shape[0], bv.shape[1]), dtype=av.dtype,
-                        tile_hint=tile_hint, reducer=np.add)
+                                tile_hint=tile_hint, reducer=np.add)
 
       fn_kw = dict(numpy_data = bv)
       av.foreach_tile(mapper_fn = target_mapper,
-                             kw = dict(source=av, 
-                                       map_fn=_dot_numpy,
-                                       target=target,
-                                       fn_kw=fn_kw))
-      return target
+                      kw = dict(source=av, 
+                                map_fn=_dot_numpy,
+                                target=target,
+                                fn_kw=fn_kw))
     else:
       if self.tile_hint is None:
         tile_hint = np.maximum(av.tile_shape(), bv.tile_shape())
@@ -112,13 +115,14 @@ class DotExpr(Expr):
       target = distarray.create((av.shape[0], bv.shape[1]), dtype=av.dtype,
                                 tile_hint=tile_hint, reducer=np.add,
                                 sparse=sparse)
-      fn_kw = dict(av = av, bv = bv)
+      #fn_kw = dict(av = av, bv = bv)
+      fn_kw = dict(av = av, bv = bv, local_reduction=True)
       av.foreach_tile(mapper_fn = target_mapper,
                       kw = dict(map_fn=_dot_mapper,
                                 source=av,
                                 target=target,
                                 fn_kw=fn_kw))
-      return target
+    return target
 
 def dot(a, b, tile_hint=None):
   '''

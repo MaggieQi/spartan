@@ -98,7 +98,17 @@ cdef class TileExtent(object):
     #return ravelled_pos(self.ul, self.array_shape)
     
   def __richcmp__(self, other, operation):
-    if operation == 2: # eq
+    if operation == 0 or operation == 4: # smaller or bigger
+      smaller = True
+      for i in range(len(self.ul)):
+        if self.ul[i] < other.ul[i]:
+           smaller = True
+           break
+        elif self.ul[i] > other.ul[i]:
+           smaller = False
+           break
+      return smaller if operation == 0 else (not smaller)
+    elif operation == 2: # eq
       return isinstance(other, TileExtent) and \
              self.ul == other.ul and  \
              self.lr == other.lr
@@ -351,9 +361,9 @@ cpdef intersection(TileExtent a, TileExtent b):
   '''
   if a is None:
     return None
-    
-  Assert.eq(a.array_shape, b.array_shape, 'Tiles must have compatible shapes!')
   
+  Assert.eq(a.array_shape, b.array_shape, 'Tiles must have compatible shapes!')
+
   cdef coordinate_t ul[MAX_DIM]
   cdef coordinate_t lr[MAX_DIM]
   cdef unsigned int i
@@ -363,7 +373,7 @@ cpdef intersection(TileExtent a, TileExtent b):
     if a._lr[i] < b._ul[i]: return None
     ul[i] = a._ul[i] if a._ul[i] >= b._ul[i] else b._ul[i]
     lr[i] = a._lr[i] if a._lr[i] <  b._lr[i] else b._lr[i]
-  
+
   return c_create(ul, lr, a.array_shape, a._ul_len)
 
 

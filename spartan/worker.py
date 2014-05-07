@@ -28,8 +28,9 @@ from .rpc import zeromq, TimeoutException, rlock
 from .util import Assert
 import psutil
 import weakref
-import os
 import numpy as np
+import scipy.sparse
+from spartan import sparse
 
 #timeout for hearbeat messsage
 HEARTBEAT_TIMEOUT=10
@@ -211,7 +212,7 @@ class Worker(object):
     else:
       resp = core.GetResp(data=self._blobs[req.id].data.flatten()[req.subslice])
       handle.done(resp)
-      
+
   def _run_kernel(self, req, handle):
     '''
     Run a kernel over the tiles resident on this worker.
@@ -227,6 +228,11 @@ class Worker(object):
     try:
       blob_ctx.set(self._ctx)
       results = {}
+
+      local_reduction = sparse.create_unordered_map()
+      if 'target' in req.kw and 'local_reduction' in req.kw['fn_kw']:
+        req.kw['fn_kw']['local_reduction'] = local_reduction
+
       for tile_id in req.blobs:
         #util.log_info('%s %s', tile_id, tile_id in self._blobs)
         if tile_id in self._blobs:
@@ -239,12 +245,25 @@ class Worker(object):
             futures.append(map_result.futures)
 
           
-          #util.log_info('W%d kernel finish', self.id)
-      
+      #util.log_info('W%d kernel finish %f', self.id, time.time() - begin)
       # wait for all kernel update operations to finish
-#       util.log_warn('Waiting for %s futures', len(futures))
-      rpc.wait_for_all(futures) 
-      handle.done(results)
+      rpc.wait_for_all(futures)
+      if 'target' not in req.kw or 'local_reduction' not in req.kw['fn_kw']:
+        handle.done(results)
+      else:
+        target = req.kw['target']
+        ex = results.values()[0]
+        tt1 = time.time()
+        new_rows, new_cols, new_data  = sparse.generate_reduction_data(local_reduction)
+        tt2 = time.time()
+        v = scipy.sparse.coo_matrix((new_data, (new_rows, new_cols)), shape=target.shape, dtype=target.dtype)
+        tt3 = time.time()
+        target.update(ex, v)
+        tt4 = time.time()
+        util.log_warn('sort:%s, create coo:%s, update:%s', tt2 - tt1, tt3 - tt2, tt4 - tt3)
+        handle.done({})
+  
+      #util.log_warn('Waiting for %s futures done %f', len(futures), time.time() - begin)
     except:
       util.log_warn('Exception occurred during kernel call', exc_info=1)
       self.worker_status.add_task_failure(req)

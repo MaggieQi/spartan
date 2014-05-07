@@ -3,6 +3,7 @@
 import itertools
 import collections
 import traceback
+import appdirs
 
 import scipy.sparse
 import numpy as np
@@ -14,6 +15,7 @@ from ..util import Assert
 from ..config import FLAGS
 from .. import master
 
+import time
 # number of elements per tile
 DEFAULT_TILE_SIZE = 100000
 
@@ -289,8 +291,8 @@ class DistArrayImpl(DistArray):
     #util.log_info('FETCH: %s %s', self.shape, region)
 
     ctx = blob_ctx.get()
-   
-    
+
+
     # special case exact match against a tile 
     if region in self.tiles:
       #util.log_warn('Exact match.')
@@ -366,7 +368,6 @@ class DistArrayImpl(DistArray):
       #util.log_info('EXACT: %s %s ', region, dst_slice)
       return ctx.update(tile_id, dst_slice, data, self.reducer_fn, wait=wait)
     
-    
     futures = []
     slices = []
     
@@ -376,24 +377,25 @@ class DistArrayImpl(DistArray):
     else:
       splits = list(extent.find_overlapping(self.tiles, region))
       #util.log_info('%s: Updating %s tiles with data:%s', region, len(splits), data)
-      
+
       for dst_extent, intersection in splits:
         #util.log_info('%s %s %s', region, dst_extent, intersection)
-  
+
         tile_id = self.tiles[dst_extent]
-  
+
         src_slice = extent.offset_slice(region, intersection)
         dst_slice = extent.offset_slice(dst_extent, intersection)
-     
+
         shape = [slice.stop - slice.start for slice in dst_slice]
         if extent.all_nonzero_shape(shape):
           slices.append((tile_id, src_slice, dst_slice))
         #util.log_info('Update src:%s dst:%s data shape:%s', src_slice, dst_slice, data.shape)
     
     slices.sort(key=lambda x: x[1][0].start)
-    #util.log_info("Update: slices:%s", slices)
+    st = time.time()
     result = sparse.multiple_slice(data, slices)
-    
+    util.log_warn('slicing time:%s', time.time() - st)
+
     for (tile_id, dst_slice, update_data) in result:
         #update_data = sparse.slice(data, src_slice)       
         #if update_data is not None:
@@ -429,7 +431,7 @@ def create(shape,
   if FLAGS.tile_assignment_strategy == 'round_robin':
     for ex, i in extents.iteritems():    
       tiles[ex] = ctx.create(
-                    tile.from_shape(ex.shape, dtype, tile_type=tile_type), 
+                    tile.from_shape(ex.shape, dtype, tile_type=tile_type),
                     hint=i)
   elif FLAGS.tile_assignment_strategy == 'performance':
     worker_scores = master.get().get_worker_scores()
@@ -446,6 +448,18 @@ def create(shape,
       tiles[ex] = ctx.create(
                     tile.from_shape(ex.shape, dtype, tile_type=tile_type),
                     hint=j)
+  elif FLAGS.tile_assignment_strategy == 'static':
+    all_extents = list(extents.iterkeys())
+    all_extents.sort()
+    map_file = appdirs.user_data_dir('Spartan', 'rjpower.org') + '/tiles_map'
+    with open(map_file) as fp:
+      for ex in all_extents:
+        worker = int(fp.readline().strip())
+        tiles[ex] = ctx.create(
+                    tile.from_shape(ex.shape, dtype, tile_type=tile_type), 
+                    hint = worker)
+                    
+
   else: #random
     for ex in extents:
       tiles[ex] = ctx.create(tile.from_shape(ex.shape, dtype, tile_type=tile_type))
